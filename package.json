@@ -1,0 +1,28 @@
+{
+  "name": "mcp-servers",
+  "version": "1.0.0",
+  "description": "A collection of Model Context Protocol (MCP) servers in TypeScript. Each server lives under src/<name>/.",
+  "type": "module",
+  "bin": {
+    "infra-mcp-server": "dist/infra/server.js",
+    "calendar-mcp-server": "dist/calendar/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start:infra": "node dist/infra/server.js",
+    "start:calendar": "node dist/calendar/server.js",
+    "dev:infra": "tsx watch src/infra/server.ts",
+    "dev:calendar": "tsx watch src/calendar/server.ts",
+    "inspect:infra": "npx @modelcontextprotocol/inspector tsx src/infra/server.ts",
+    "inspect:calendar": "npx @modelcontextprotocol/inspector tsx src/calendar/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
