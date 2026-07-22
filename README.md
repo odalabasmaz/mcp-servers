@@ -4,6 +4,8 @@ A small collection of **Model Context Protocol (MCP)** servers in TypeScript.
 Each server is self-contained under `src/<name>/` with its own README, and they
 share one build.
 
+[![pages-build-deployment](https://github.com/odalabasmaz/mcp-servers/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/odalabasmaz/mcp-servers/actions/workflows/pages/pages-build-deployment)
+
 📖 **[Docs / Dokümantasyon](https://odalabasmaz.github.io/mcp-servers/)** — bilingual (TR/EN) visual walkthrough of every server.
 
 ## Servers
