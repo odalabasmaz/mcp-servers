@@ -33,6 +33,14 @@ npm run start:whatsapp        npm run inspect:whatsapp
 
 See each server's README for tools, registration, and examples.
 
+## Docs page
+
+[`docs/index.html`](docs/index.html) — a single-page, bilingual (TR/EN) visual
+walkthrough of every server: architecture diagrams, tool/resource/prompt
+tables, and the real bugs found while building each one. Open it directly in
+a browser, or serve it via GitHub Pages (Settings → Pages → deploy from
+`/docs`).
+
 ## Adding a new server
 
 1. `mkdir src/<name>` and add `server.ts` (copy an existing one as a template).
