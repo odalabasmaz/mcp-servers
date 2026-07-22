@@ -361,7 +361,7 @@ server.registerPrompt(
 /* -------------------------------------------------------------------------- */
 
 async function main() {
-  // Created here (not at module load) so a misconfigured Google backend
+// Created here (not at module load) so a misconfigured Google backend
   // fails through this function's caller — `main().catch(...)` below — the
   // same clear "Fatal error starting..." path every startup failure takes,
   // rather than an unhandled top-level rejection with a raw stack trace.
