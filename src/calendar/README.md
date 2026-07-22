@@ -20,10 +20,13 @@ right:
 - **Structured errors** — invalid input comes back as a typed error the client
   can reason about, not a thrown exception.
 
-The calendar lives behind a small `CalendarBackend` interface. The default is an
-**in-memory** backend (seeded with two events) so the server runs and demos with
-**zero credentials**. A real Google Calendar / MS Graph adapter is a drop-in
-replacement for that interface — the tools don't change.
+The calendar lives behind a small `CalendarBackend` interface
+([`backend.ts`](backend.ts)). The default is an **in-memory** backend (seeded
+with two events) so the server runs and demos with **zero credentials**. Set
+`CALENDAR_BACKEND=google` to point it at a real **Google Calendar** instead —
+see [GOOGLE_CALENDAR_SETUP.md](GOOGLE_CALENDAR_SETUP.md) (includes reading
+across multiple calendars). Either way the tools don't change; only the
+`CalendarBackend` implementation underneath does.
 
 ### What it exposes
 
@@ -36,10 +39,13 @@ replacement for that interface — the tools don't change.
 | `cancel_event` | tool (write) | Cancel an event by id |
 | `schedule_interview_flow` | prompt | Chains the tools into "find a slot and book it" |
 
-> **Concurrency note:** idempotency is atomic (safe under concurrent retries).
-> Cross-event conflict detection is check-then-act — correct for sequential MCP
-> clients (the normal case); a production backend would lean on the provider's
-> transactional guarantees / ETags to close the read-write race.
+> **Concurrency note (default in-memory backend):** idempotency is atomic
+> (safe under concurrent retries). Cross-event conflict detection is
+> check-then-act — correct for sequential MCP clients (the normal case); a
+> production backend would lean on the provider's transactional guarantees /
+> ETags to close the read-write race. The optional Google Calendar backend has
+> a different, weaker guarantee for idempotency — see
+> [GOOGLE_CALENDAR_SETUP.md](GOOGLE_CALENDAR_SETUP.md).
 
 ---
 
@@ -87,9 +93,26 @@ UTC on 2026-07-20) and add a stable `idempotencyKey` so retries are safe.
 
 ---
 
+## Google Calendar
+
+Point the server at your own Google Calendar instead of the in-memory demo
+data (OAuth2 + a refresh token you hold — meant for personal testing, not a
+server-to-server production setup).
+
+See **[GOOGLE_CALENDAR_SETUP.md](GOOGLE_CALENDAR_SETUP.md)** for the full
+walkthrough: creating an OAuth client, getting a refresh token, the env var
+reference, registering with Claude Code, reading across **multiple
+calendars**, and the concurrency caveat specific to this backend.
+
+---
+
 ## Layout
 
 ```
-src/calendar/server.ts   # the whole server: 5 tools, 1 prompt, pluggable backend
-src/calendar/README.md   # this file
+src/calendar/server.ts                          # tools, prompt, backend selection
+src/calendar/backend.ts                         # CalendarBackend interface + InMemoryCalendarBackend
+src/calendar/google-backend.ts                   # GoogleCalendarBackend (Calendar v3)
+src/calendar/scripts/get-google-refresh-token.ts # one-time OAuth helper (npm run google:auth)
+src/calendar/GOOGLE_CALENDAR_SETUP.md           # Google Calendar setup guide
+src/calendar/README.md                          # this file
 ```

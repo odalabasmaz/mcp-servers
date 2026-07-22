@@ -13,11 +13,11 @@
  *   - timezone-safe reasoning (everything is UTC ISO-8601 internally)
  *   - structured errors the client can reason about (isError, not throws)
  *
- * The calendar itself sits behind a small `CalendarBackend` interface. The
- * default is an in-memory store so the server runs and demos with zero
- * external credentials. Swapping in a real Google Calendar / MS Graph
- * adapter is a matter of implementing the same interface — the tools don't
- * change.
+ * The calendar itself sits behind a small `CalendarBackend` interface
+ * (backend.ts). The default is an in-memory store so the server runs and
+ * demos with zero external credentials. Set `CALENDAR_BACKEND=google` (plus
+ * OAuth env vars) to point it at a real Google Calendar instead — see
+ * "Google Calendar" in README.md. The tools below don't change either way.
  *
  * Transport is stdio, like the infra server.
  */
@@ -25,72 +25,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
-
-/* -------------------------------------------------------------------------- */
-/* Domain                                                                     */
-/* -------------------------------------------------------------------------- */
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  /** UTC ISO-8601, inclusive start. */
-  start: string;
-  /** UTC ISO-8601, exclusive end. */
-  end: string;
-  attendees: string[];
-  /** Client-supplied key that makes scheduling idempotent. */
-  idempotencyKey?: string;
-}
-
-/**
- * The seam a real provider plugs into. Keep it tiny: everything the tools
- * need, nothing they don't. A GoogleCalendarBackend would implement this
- * against the Calendar v3 API behind an OAuth2 client.
- */
-interface CalendarBackend {
-  list(rangeStart: string, rangeEnd: string): Promise<CalendarEvent[]>;
-  /**
-   * Insert an event. Idempotent and atomic: if an event with the same
-   * `idempotencyKey` already exists, no new event is created and the existing
-   * one is returned with `created: false`. Keeping dedup in the same critical
-   * section as the write is what makes a retried call safe under concurrency —
-   * a check-then-write in the caller would still race.
-   */
-  create(event: CalendarEvent): Promise<{ event: CalendarEvent; created: boolean }>;
-  cancel(id: string): Promise<boolean>;
-}
-
-/** Zero-dependency backend so the server demos offline. */
-class InMemoryCalendarBackend implements CalendarBackend {
-  private events: CalendarEvent[] = [];
-
-  constructor(seed: CalendarEvent[] = []) {
-    this.events = [...seed];
-  }
-
-  async list(rangeStart: string, rangeEnd: string): Promise<CalendarEvent[]> {
-    const s = Date.parse(rangeStart);
-    const e = Date.parse(rangeEnd);
-    return this.events
-      .filter((ev) => Date.parse(ev.end) > s && Date.parse(ev.start) < e)
-      .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
-  }
-
-  async create(event: CalendarEvent): Promise<{ event: CalendarEvent; created: boolean }> {
-    if (event.idempotencyKey) {
-      const existing = this.events.find((ev) => ev.idempotencyKey === event.idempotencyKey);
-      if (existing) return { event: existing, created: false };
-    }
-    this.events.push(event);
-    return { event, created: true };
-  }
-
-  async cancel(id: string): Promise<boolean> {
-    const before = this.events.length;
-    this.events = this.events.filter((ev) => ev.id !== id);
-    return this.events.length < before;
-  }
-}
+import type { CalendarBackend } from "./backend.js";
+import { InMemoryCalendarBackend } from "./backend.js";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -121,24 +57,56 @@ function toolText(payload: unknown) {
 /* Server                                                                     */
 /* -------------------------------------------------------------------------- */
 
-// A couple of seeded events so `list_events` / conflict checks show something
-// out of the box. Times are UTC.
-const backend: CalendarBackend = new InMemoryCalendarBackend([
-  {
-    id: "seed-standup",
-    title: "Team standup",
-    start: "2026-07-20T09:00:00.000Z",
-    end: "2026-07-20T09:30:00.000Z",
-    attendees: ["team@example.com"],
-  },
-  {
-    id: "seed-1on1",
-    title: "1:1 with manager",
-    start: "2026-07-20T14:00:00.000Z",
-    end: "2026-07-20T15:00:00.000Z",
-    attendees: ["manager@example.com"],
-  },
-]);
+/**
+ * `CALENDAR_BACKEND=google` switches to a real Google Calendar (see
+ * google-backend.ts + README.md "Google Calendar" for setup). Anything else
+ * (including unset) keeps the zero-config in-memory backend, seeded with two
+ * events so `list_events` / conflict checks show something out of the box.
+ */
+async function createBackend(): Promise<CalendarBackend> {
+  if (process.env.CALENDAR_BACKEND !== "google") {
+    return new InMemoryCalendarBackend([
+      {
+        id: "seed-standup",
+        title: "Team standup",
+        start: "2026-07-20T09:00:00.000Z",
+        end: "2026-07-20T09:30:00.000Z",
+        attendees: ["team@example.com"],
+      },
+      {
+        id: "seed-1on1",
+        title: "1:1 with manager",
+        start: "2026-07-20T14:00:00.000Z",
+        end: "2026-07-20T15:00:00.000Z",
+        attendees: ["manager@example.com"],
+      },
+    ]);
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error(
+      "CALENDAR_BACKEND=google requires GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and " +
+        "GOOGLE_REFRESH_TOKEN. See GOOGLE_CALENDAR_SETUP.md for how to obtain them " +
+        "(npm run google:auth generates the refresh token)."
+    );
+  }
+
+  const { GoogleCalendarBackend } = await import("./google-backend.js");
+  return new GoogleCalendarBackend({
+    clientId,
+    clientSecret,
+    refreshToken,
+    writeCalendarId: process.env.GOOGLE_CALENDAR_ID,
+    readCalendarIds: process.env.GOOGLE_CALENDAR_IDS,
+  });
+}
+
+// Assigned in main(), before the transport connects — see there for why
+// backend creation is deferred instead of a top-level await.
+let backend: CalendarBackend;
 
 const server = new McpServer({
   name: "calendar-mcp-server",
@@ -258,9 +226,16 @@ server.registerTool(
         .boolean()
         .default(false)
         .describe("Book even if it conflicts with existing events"),
+      calendarId: z
+        .string()
+        .optional()
+        .describe(
+          "Which calendar to book into — by name (e.g. 'Health') or ID. Defaults to the " +
+            "server's configured write calendar. Ignored by the in-memory backend."
+        ),
     },
   },
-  async ({ title, start, end, attendees, idempotencyKey, force }) => {
+  async ({ title, start, end, attendees, idempotencyKey, force, calendarId }) => {
     if (Date.parse(end) <= Date.parse(start)) {
       return toolError("end must be after start.");
     }
@@ -279,8 +254,15 @@ server.registerTool(
       return toolText({ status: "already_scheduled", event: priorSelf });
     }
 
-    // Conflict gate: never silently double-book with *other* events.
-    const conflicts = overlapping.filter((ev) => ev.idempotencyKey !== idempotencyKey);
+    // Conflict gate: never silently double-book with *other* events. The
+    // exact-key match is already handled by `priorSelf` above, so here we only
+    // discount another event when *this* request carries a key that matches it.
+    // Comparing raw `ev.idempotencyKey !== idempotencyKey` would wrongly cancel
+    // out a real conflict when both sides are `undefined` (the keyless common
+    // case), letting any keyless booking overlap keyless events unchecked.
+    const conflicts = idempotencyKey
+      ? overlapping.filter((ev) => ev.idempotencyKey !== idempotencyKey)
+      : overlapping;
     if (conflicts.length > 0 && !force) {
       return toolText({
         status: "conflict",
@@ -290,14 +272,22 @@ server.registerTool(
     }
 
     // Atomic idempotent insert closes the residual concurrent-retry race.
-    const { event, created } = await backend.create({
-      id: randomUUID(),
-      title,
-      start,
-      end,
-      attendees,
-      idempotencyKey,
-    });
+    let created: boolean;
+    let event;
+    try {
+      ({ event, created } = await backend.create({
+        id: randomUUID(),
+        title,
+        start,
+        end,
+        attendees,
+        idempotencyKey,
+        calendarId,
+      }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return toolError(`Failed to schedule the event: ${message}`);
+    }
     return toolText({
       status: created ? "scheduled" : "already_scheduled",
       forced: created && conflicts.length > 0,
@@ -315,7 +305,13 @@ server.registerTool(
     inputSchema: { id: z.string().min(1).describe("Event id to cancel") },
   },
   async ({ id }) => {
-    const removed = await backend.cancel(id);
+    let removed: boolean;
+    try {
+      removed = await backend.cancel(id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return toolError(`Failed to cancel event '${id}': ${message}`);
+    }
     return removed
       ? toolText({ status: "cancelled", id })
       : toolError(`No event found with id '${id}'.`);
@@ -365,6 +361,12 @@ server.registerPrompt(
 /* -------------------------------------------------------------------------- */
 
 async function main() {
+  // Created here (not at module load) so a misconfigured Google backend
+  // fails through this function's caller — `main().catch(...)` below — the
+  // same clear "Fatal error starting..." path every startup failure takes,
+  // rather than an unhandled top-level rejection with a raw stack trace.
+  backend = await createBackend();
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   // Logs MUST go to stderr — stdout is the MCP protocol channel.
