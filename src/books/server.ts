@@ -38,7 +38,7 @@ const RESULT_FIELDS = [
   "subject",
 ].join(",");
 
-const server = new McpServer({
+export const server = new McpServer({
   name: "books-mcp-server",
   version: "1.0.0",
 });
@@ -190,7 +190,9 @@ async function main() {
   console.error("books-mcp-server running on stdio");
 }
 
-main().catch((err) => {
-  console.error("Fatal error starting books-mcp-server:", err);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error("Fatal error starting books-mcp-server:", err);
+    process.exit(1);
+  });
+}

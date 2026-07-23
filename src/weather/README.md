@@ -93,6 +93,16 @@ printf '%s\n' \
 | node dist/weather/server.js
 ```
 
+### Example prompts (Claude Code CLI)
+
+Once registered (`claude mcp add weather ...`), just ask in plain language:
+
+- "What's the weather in Munich?"
+- "Give me a 5-day forecast for Tokyo"
+- "Is it going to rain in Berlin tomorrow?"
+- "There are multiple places called Springfield — show me all the geocoding matches"
+- "Use the weather_briefing prompt for Paris, France"
+
 ## Design notes
 
 - **No API key** — Open-Meteo's free tier needs no auth, so this server is

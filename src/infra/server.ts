@@ -19,7 +19,7 @@ import { z } from "zod";
 import net from "node:net";
 import os from "node:os";
 
-const server = new McpServer({
+export const server = new McpServer({
   name: "infra-mcp-server",
   version: "1.0.0",
 });
@@ -183,7 +183,9 @@ async function main() {
   console.error("infra-mcp-server running on stdio");
 }
 
-main().catch((err) => {
-  console.error("Fatal error starting infra-mcp-server:", err);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error("Fatal error starting infra-mcp-server:", err);
+    process.exit(1);
+  });
+}

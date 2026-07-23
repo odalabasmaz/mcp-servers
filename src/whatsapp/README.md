@@ -124,6 +124,16 @@ report `connecting` for a few seconds after startup while the headless
 browser session reconnects — that's expected, not a bug; poll again or wait
 for `ready`.
 
+### Example prompts (Claude Code CLI)
+
+Once registered (`claude mcp add whatsapp ...`), just ask in plain language:
+
+- "Is WhatsApp connected?"
+- "Show me my unread chats"
+- "What are the last 10 messages in my chat with Jane?"
+- "Use the reply_flow prompt to draft a reply to Jane's last message, then check with me before sending"
+- "Send 'Running 10 min late' to +1 555 123 4567" (will still go through your MCP client's own approval step for write actions)
+
 ## Design notes
 
 - **No custom message store** — `list_chats`/`get_messages` read straight

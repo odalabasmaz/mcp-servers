@@ -12,11 +12,26 @@ share one build.
 
 | Server | Path | What it does |
 |--------|------|--------------|
-| **infra** | [`src/infra/`](src/infra/README.md) | IT-infra ops: `echo`, `check_port`, a system-info resource, a `diagnose_service` prompt. The read-only starter. |
-| **calendar** | [`src/calendar/`](src/calendar/README.md) | Interview scheduling: list/find-free/check-conflicts + **mutating** book/cancel tools. Conflict-gated and idempotent. In-memory by default; optional Google Calendar backend. |
-| **books** | [`src/books/`](src/books/README.md) | Online book search via OpenLibrary's `search.json` API, with `limit`/`page` pagination. |
-| **weather** | [`src/weather/`](src/weather/README.md) | Weather via Open-Meteo: geocode a place name, then get current + daily forecast. Keyless. |
-| **whatsapp** | [`src/whatsapp/`](src/whatsapp/README.md) | Read/reply to your personal WhatsApp via an unofficial library. ⚠️ Against WhatsApp's ToS — real ban risk, read the README first. |
+| **infra** | [`src/infra/`](src/infra/README.md) ([design](src/infra/design.md)) | IT-infra ops: `echo`, `check_port`, a system-info resource, a `diagnose_service` prompt. The read-only starter. |
+| **calendar** | [`src/calendar/`](src/calendar/README.md) ([design](src/calendar/design.md)) | Interview scheduling: list/find-free/check-conflicts + **mutating** book/cancel tools. Conflict-gated and idempotent. In-memory by default; optional Google Calendar backend. |
+| **books** | [`src/books/`](src/books/README.md) ([design](src/books/design.md)) | Online book search via OpenLibrary's `search.json` API, with `limit`/`page` pagination. |
+| **weather** | [`src/weather/`](src/weather/README.md) ([design](src/weather/design.md)) | Weather via Open-Meteo: geocode a place name, then get current + daily forecast. Keyless. |
+| **whatsapp** | [`src/whatsapp/`](src/whatsapp/README.md) ([design](src/whatsapp/design.md)) | Read/reply to your personal WhatsApp via an unofficial library. ⚠️ Against WhatsApp's ToS — real ban risk, read the README first. |
+| **oncall** | [`src/oncall/`](src/oncall/README.md) ([design](src/oncall/design.md)) | Incident triage: open/ack/resolve with state-transition gating, idempotency, and `force` overrides. In-memory. |
+
+## Designing a new server
+
+Before building a new server, fill in a design template and hand it to the
+`mcp-builder` skill as the resolved spec:
+
+- [`templates/mcp-server-design-template.md`](templates/mcp-server-design-template.md)
+  — full pass: goal/scope, backend/auth, domain model, tool surface, tool vs.
+  resource vs. prompt, validation, idempotency, resilience, verification plan.
+- [`templates/mcp-server-design-template-light.md`](templates/mcp-server-design-template-light.md)
+  — quick version for small/time-boxed builds (e.g. interview exercises):
+  requirements, tools, resources, prompts only. Each server's filled copy
+  lives next to its code as `src/<name>/design.md` (linked from the table
+  above).
 
 ## Getting started
 
@@ -33,9 +48,17 @@ npm run start:calendar       npm run inspect:calendar
 npm run start:books           npm run inspect:books
 npm run start:weather        npm run inspect:weather
 npm run start:whatsapp        npm run inspect:whatsapp
+npm run start:oncall         npm run inspect:oncall
 ```
 
 See each server's README for tools, registration, and examples.
+
+Run the automated test suite (every server has one, mocking external
+HTTP/network/browser dependencies so it runs offline) with:
+
+```bash
+npm test
+```
 
 ## Docs page
 
@@ -56,11 +79,12 @@ served via GitHub Pages.
 
 ```
 src/
-├── infra/         server.ts + README.md
-├── calendar/      server.ts + README.md (+ google-backend.ts, scripts/)
-├── books/         server.ts + README.md
-├── weather/       server.ts + README.md
-└── whatsapp/      server.ts + README.md (+ scripts/pair.ts)
-tsconfig.json   # shared: ES2022 + Node16 modules, compiles src/**/* → dist/
-package.json    # shared deps + per-server scripts
+├── infra/         server.ts + server.test.ts + README.md + design.md
+├── calendar/      server.ts + server.test.ts + README.md + design.md (+ backend.ts, google-backend.ts, scripts/)
+├── books/         server.ts + server.test.ts + README.md + design.md
+├── weather/       server.ts + server.test.ts + README.md + design.md
+├── whatsapp/      server.ts + server.test.ts + README.md + design.md (+ scripts/pair.ts)
+└── oncall/        server.ts + backend.ts + server.test.ts + README.md + design.md
+tsconfig.json   # shared: ES2022 + Node16 modules, compiles src/**/* → dist/ (test files excluded)
+package.json    # shared deps + per-server scripts + `test` (vitest)
 ```

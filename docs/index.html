@@ -538,6 +538,9 @@ hr.rule{border:none; border-top:1px solid var(--line); margin:2.6rem 0;}
       <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-whatsapp" data-tab="whatsapp">
         <span class="kind-risk dot-wrap"><span class="dot"></span></span><span>whatsapp</span>
       </button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-oncall" data-tab="oncall">
+        <span class="kind-write dot-wrap"><span class="dot"></span></span><span>oncall</span>
+      </button>
     </nav>
 
     <div class="sidebar-foot">
@@ -599,6 +602,7 @@ hr.rule{border:none; border-top:1px solid var(--line); margin:2.6rem 0;}
               <tr><td class="mono">books</td><td data-i18n="ov.servers.books">Kitap arama</td><td><span class="kindpill read">READ-ONLY</span></td><td>OpenLibrary <code>search.json</code></td></tr>
               <tr><td class="mono">weather</td><td data-i18n="ov.servers.weather">Konum bazlı hava durumu</td><td><span class="kindpill read">READ-ONLY</span></td><td>Open-Meteo</td></tr>
               <tr><td class="mono">whatsapp</td><td data-i18n="ov.servers.whatsapp">WhatsApp okuma/yanıtlama</td><td><span class="kindpill write">MUTATING</span> <span class="kindpill" style="background:var(--rust-soft);color:var(--rust)" data-i18n="ov.servers.risk">RİSKLİ</span></td><td data-i18n="ov.servers.whatsapp.dep">whatsapp-web.js (resmi olmayan)</td></tr>
+              <tr><td class="mono">oncall</td><td data-i18n="ov.servers.oncall">Olay (incident) triyajı: aç/onayla/çöz</td><td><span class="kindpill write">MUTATING</span></td><td data-i18n="ov.servers.oncall.dep">Bellek-içi</td></tr>
             </tbody>
           </table>
         </div>
@@ -613,27 +617,33 @@ hr.rule{border:none; border-top:1px solid var(--line); margin:2.6rem 0;}
           <div class="kv"><span class="k">isError</span><span class="v" data-i18n="ov.conv.error">Hatalar fırlatılmaz (throw), yapılandırılmış <code>{isError:true}</code> olarak döner.</span></div>
           <div class="kv"><span class="k">npm run start/dev/inspect:&lt;isim&gt;</span><span class="v" data-i18n="ov.conv.scripts">Her sunucunun kendi çalıştırma/geliştirme/inceleme script'leri var, tek <code>package.json</code> içinde.</span></div>
           <div class="kv"><span class="k">tsconfig.json</span><span class="v" data-i18n="ov.conv.tsconfig">Paylaşılan: ES2022 hedef, Node16 modül çözümleme, <code>src/**/*</code> → <code>dist/</code>.</span></div>
+          <div class="kv"><span class="k">npm test (vitest)</span><span class="v" data-i18n="ov.conv.test">Her sunucunun kendi <code>server.test.ts</code>'i var; dış HTTP/ağ/tarayıcı bağımlılıkları mock'lanır, hepsi offline ve tek komutla çalışır.</span></div>
+          <div class="kv"><span class="k">annotations</span><span class="v" data-i18n="ov.conv.annotations">Her araç <code>readOnlyHint</code>/<code>destructiveHint</code>/<code>idempotentHint</code>/<code>openWorldHint</code> bildirir — istemcinin onay isteyip istemeyeceğine karar vermesi için makine-okunur sinyal.</span></div>
+          <div class="kv"><span class="k">src/&lt;isim&gt;/design.md</span><span class="v" data-i18n="ov.conv.design">Her sunucunun, kodlanmadan önce doldurulan hafif (light) tasarım şablonu kopyası — bkz. <code>templates/</code>.</span></div>
         </div>
       </section>
 
       <section class="block">
         <h2><span class="num">05</span> <span data-i18n="ov.layout.h">Dizin yapısı</span></h2>
         <pre>src/
-├── infra/       server.ts, README.md
-├── calendar/    server.ts, backend.ts, google-backend.ts,
-│                GOOGLE_CALENDAR_SETUP.md, scripts/get-google-refresh-token.ts
-├── books/       server.ts, README.md
-├── weather/     server.ts, README.md
-└── whatsapp/    server.ts, scripts/pair.ts, README.md
-tsconfig.json    <span class="c">// paylaşılan derleme ayarları</span>
-package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu başına script'ler</span></pre>
+├── infra/       server.ts, server.test.ts, README.md, design.md
+├── calendar/    server.ts, server.test.ts, backend.ts, google-backend.ts,
+│                GOOGLE_CALENDAR_SETUP.md, scripts/get-google-refresh-token.ts,
+│                README.md, design.md
+├── books/       server.ts, server.test.ts, README.md, design.md
+├── weather/     server.ts, server.test.ts, README.md, design.md
+├── whatsapp/    server.ts, server.test.ts, scripts/pair.ts, README.md, design.md
+└── oncall/      server.ts, backend.ts, server.test.ts, README.md, design.md
+tsconfig.json    <span class="c">// paylaşılan derleme ayarları (test dosyaları build çıktısından hariç)</span>
+package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu başına script'ler + `test` (vitest)</span>
+templates/       <span class="c">// tam ve "light" tasarım şablonları — yeni sunucu öncesi doldurulur</span></pre>
       </section>
     </section>
 
     <!-- ============================= INFRA ============================= -->
     <section class="panel" id="panel-infra" role="tabpanel" aria-labelledby="tab-infra">
       <div class="panel-head">
-        <span class="eyebrow" data-i18n="infra.eyebrow">Sunucu 1 / 5</span>
+        <span class="eyebrow" data-i18n="infra.eyebrow">Sunucu 1 / 6</span>
         <h1>infra-mcp-server</h1>
         <p class="tagline" data-i18n="infra.tagline">Bir LLM agent'ına birkaç temel IT-altyapı işlemi sunan, minimal ve okunması bir oturumluk bir MCP sunucusu. Repodaki "salt-okunur başlangıç noktası".</p>
         <div class="badgerow">
@@ -736,7 +746,7 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
     <!-- ============================= CALENDAR ============================= -->
     <section class="panel" id="panel-calendar" role="tabpanel" aria-labelledby="tab-calendar">
       <div class="panel-head">
-        <span class="eyebrow" data-i18n="cal.eyebrow">Sunucu 2 / 5</span>
+        <span class="eyebrow" data-i18n="cal.eyebrow">Sunucu 2 / 6</span>
         <h1>calendar-mcp-server</h1>
         <p class="tagline" data-i18n="cal.tagline">Görüşme planlamayı temalı, gerçek bir üçüncü-parti entegrasyonun çözmesi gereken her şeyi çözen bir sunucu: çakışma tespiti, idempotency, zaman dilimi güvenliği, yapılandırılmış hatalar.</p>
         <div class="badgerow">
@@ -933,7 +943,7 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
     <!-- ============================= BOOKS ============================= -->
     <section class="panel" id="panel-books" role="tabpanel" aria-labelledby="tab-books">
       <div class="panel-head">
-        <span class="eyebrow" data-i18n="books.eyebrow">Sunucu 3 / 5</span>
+        <span class="eyebrow" data-i18n="books.eyebrow">Sunucu 3 / 6</span>
         <h1>books-mcp-server</h1>
         <p class="tagline" data-i18n="books.tagline">OpenLibrary'nin <code>search.json</code> uç noktası üzerinden çevrimiçi kitap araması. <code>limit</code>/<code>page</code> sayfalama parametreleri doğrudan üst API'ye geçirilir.</p>
         <div class="badgerow">
@@ -1018,7 +1028,7 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
     <!-- ============================= WEATHER ============================= -->
     <section class="panel" id="panel-weather" role="tabpanel" aria-labelledby="tab-weather">
       <div class="panel-head">
-        <span class="eyebrow" data-i18n="wx.eyebrow">Sunucu 4 / 5</span>
+        <span class="eyebrow" data-i18n="wx.eyebrow">Sunucu 4 / 6</span>
         <h1>weather-mcp-server</h1>
         <p class="tagline" data-i18n="wx.tagline">Open-Meteo'nun ücretsiz, anahtarsız geocoding + tahmin API'leri üzerinden konum bazlı hava durumu. Varsayılan yol tek çağrıda: yer adı ver, mevcut durum + günlük tahmini al.</p>
         <div class="badgerow">
@@ -1107,7 +1117,7 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
     <!-- ============================= WHATSAPP ============================= -->
     <section class="panel" id="panel-whatsapp" role="tabpanel" aria-labelledby="tab-whatsapp">
       <div class="panel-head">
-        <span class="eyebrow" data-i18n="wa.eyebrow">Sunucu 5 / 5</span>
+        <span class="eyebrow" data-i18n="wa.eyebrow">Sunucu 5 / 6</span>
         <h1>whatsapp-mcp-server</h1>
         <p class="tagline" data-i18n="wa.tagline">Kişisel WhatsApp hesabını okuma/yanıtlama — <code>whatsapp-web.js</code> ile gerçek, başsız (headless) bir WhatsApp Web oturumu sürerek (Puppeteer/Chromium üzerinden).</p>
         <div class="badgerow">
@@ -1239,8 +1249,109 @@ const { Client, LocalAuth } = whatsappWebPkg;</pre>
       </section>
     </section>
 
+    <!-- ============================= ONCALL ============================= -->
+    <section class="panel" id="panel-oncall" role="tabpanel" aria-labelledby="tab-oncall">
+      <div class="panel-head">
+        <span class="eyebrow" data-i18n="oncall.eyebrow">Sunucu 6 / 6</span>
+        <h1>oncall-mcp-server</h1>
+        <p class="tagline" data-i18n="oncall.tagline">Bir olayı (incident) yaşam döngüsü boyunca takip eden bir sunucu — aç → onayla (ack) → çöz (resolve). Durum-geçişi kapılı, idempotent, ve <code>force</code> ile bilinçli override.</p>
+        <div class="badgerow">
+          <span class="badge write">● <span data-i18n="badge.mutating">Mutating (yazan) araçlar var</span></span>
+          <span class="badge resource" data-i18n="oncall.badge.tested">14 otomatik test</span>
+        </div>
+      </div>
+
+      <section class="block">
+        <h2><span class="num">01</span> <span data-i18n="common.diagram">Mimari — durum makinesi</span></h2>
+        <div class="diagram">
+          <div class="dflow">
+            <div class="dnode accent"><span class="t" data-i18n="common.client">İstemci</span><span class="s">Claude Code / Inspector</span></div>
+            <div class="darrow">⇄ stdio ⇄</div>
+            <div class="dnode"><span class="t">oncall-mcp-server</span><span class="s">JSON-RPC</span></div>
+            <div class="darrow">→</div>
+            <div class="dbranch">
+              <div class="dnode"><span class="t">open_incident</span><span class="s" data-i18n="oncall.d.open">tool · idempotencyKey ile dedup</span></div>
+              <div class="dnode"><span class="t">ack_incident</span><span class="s" data-i18n="oncall.d.ack">tool · idempotent / force ile reassign</span></div>
+              <div class="dnode"><span class="t">resolve_incident</span><span class="s" data-i18n="oncall.d.resolve">tool · idempotent / force ile atla</span></div>
+              <div class="dnode"><span class="t">list_incidents · get_incident</span><span class="s" data-i18n="oncall.d.read">tool · salt-okunur</span></div>
+              <div class="dnode"><span class="t">triage_flow</span><span class="s" data-i18n="oncall.d.prompt">prompt · list → ack → resolve</span></div>
+            </div>
+          </div>
+          <div class="diagram-caption" data-i18n="oncall.d.caption">Durum makinesi: <code>open → acked → resolved</code>. Geçersiz geçişler (ör. çözülmüş bir olayı tekrar onaylamak) reddedilir; <code>force:true</code> iki farklı anlama gelir — <code>ack_incident</code>'ta farklı birine yeniden atama, <code>resolve_incident</code>'ta onaysız doğrudan çözme.</div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">02</span> <span data-i18n="common.toolstable">Araçlar ve Prompt</span></h2>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th data-i18n="common.name">Ad</th><th data-i18n="common.kind">Tür</th><th data-i18n="common.params">Parametreler</th><th data-i18n="common.desc">Açıklama</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">open_incident</td><td><span class="kindpill write">TOOL</span></td><td class="mono">title, description, affectedServices, severity, ownerTeam, idempotencyKey?</td><td data-i18n="oncall.t.open">Yeni bir olayı <code>open</code> durumunda oluşturur. Olaylar birbiriyle çakışmaz (calendar'ın aksine) — tek koruma <code>idempotencyKey</code> ile tekrar denemede aynı kaydı döndürmek.</td></tr>
+              <tr><td class="mono">ack_incident</td><td><span class="kindpill write">TOOL</span></td><td class="mono">id, assignee, force?</td><td data-i18n="oncall.t.ack">Olayı sahiplenir. Aynı kişi tekrar ack ederse no-op (idempotent); farklı biri <code>force:true</code> olmadan reddedilir; çözülmüş bir olay hiçbir zaman ack edilemez.</td></tr>
+              <tr><td class="mono">resolve_incident</td><td><span class="kindpill write">TOOL</span></td><td class="mono">id, resolutionNotes?, force?</td><td data-i18n="oncall.t.resolve">Olayı çözer. Zaten çözülmüşse no-op; henüz onaylanmamış (<code>open</code>) bir olayı çözmek <code>force:true</code> ister.</td></tr>
+              <tr><td class="mono">list_incidents</td><td><span class="kindpill read">TOOL</span></td><td class="mono">status?, severity?, assignee?</td><td data-i18n="oncall.t.list">Olayları opsiyonel filtrelerle listeler.</td></tr>
+              <tr><td class="mono">get_incident</td><td><span class="kindpill read">TOOL</span></td><td class="mono">id</td><td data-i18n="oncall.t.get">Bir olayın tüm detayını döner.</td></tr>
+              <tr><td class="mono">triage_flow</td><td><span class="kindpill pr">PROMPT</span></td><td class="mono">—</td><td data-i18n="oncall.t.flow">Zinciri belgeler: açık olayları listele → detayına bak → sahiplen → düzelt → çöz. <code>force</code>'u onaysız kullanma uyarısı içerir.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">03</span> <span data-i18n="common.files">Dosya dosya</span></h2>
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/oncall/backend.ts</span>
+            <span class="purpose" data-i18n="oncall.f.backend.purpose">sözleşme + bellek-içi backend</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <p data-i18n="oncall.f.backend.p">calendar'ın <code>CalendarBackend</code>'iyle aynı desen: <code>OnCallBackend</code> arayüzü sadece araçların ihtiyaç duyduğu 5 metodu tanımlar (<code>findByIdempotencyKey</code>, <code>create</code>, <code>get</code>, <code>list</code>, <code>save</code>); <code>InMemoryOnCallBackend</code> bunu bir <code>Map</code> üzerinde uygular.</p>
+            </div>
+          </div>
+        </div>
+        <div class="filecard" style="margin-top:1rem">
+          <div class="filecard-head">
+            <span class="path">src/oncall/server.ts</span>
+            <span class="purpose" data-i18n="oncall.f.server.purpose">araç katmanı</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <p data-i18n="oncall.f.server.p1">Her mutating tool aynı desende: mevcut olayı bul → durumuna göre (zaten yapılmış / geçersiz geçiş / gerçek işlem) üç yoldan birine dallan → yapılandırılmış sonucu döndür. <code>ack_incident</code>/<code>resolve_incident</code>'ta "farklı biri zaten yapmış" durumu, calendar'daki <code>idempotencyKey</code> karşılaştırmasındaki <code>undefined !== undefined</code> hatasının aynısına düşmemek için assignee'nin doğrudan eşitliğiyle kontrol edilir — opsiyonel bir alan değil, zorunlu bir alan olduğu için o tuzak burada oluşmuyor.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">registerTools(server, backend)</span>
+              <p data-i18n="oncall.f.server.p2">Tüm araçları modülün <code>server</code> singleton'ına <em>değil</em>, dışa aktarılan bu fonksiyona kaydeder — testlerin her seferinde taze bir <code>McpServer</code> + taze bir <code>InMemoryOnCallBackend</code> ile çağırıp durumu sıfırlayabilmesi için.</p>
+            </div>
+          </div>
+        </div>
+        <div class="filecard" style="margin-top:1rem">
+          <div class="filecard-head">
+            <span class="path">src/oncall/server.test.ts</span>
+            <span class="purpose" data-i18n="oncall.f.test.purpose">vitest · 14 test</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <p data-i18n="oncall.f.test.p">Sunucuyu gerçek bir <code>Client</code> + <code>InMemoryTransport</code> çifti üzerinden sürer (mock değil, gerçek MCP protokol yolu). Mutlu yol, zorunlu-alan-eksik, çakışma+force, idempotent retry ve state-transition red senaryolarının hepsi ayrı test — özellikle "opsiyonel alan hiç verilmeden" senaryosu, calendar'daki gerçek bug'ın tam da saklandığı yer olduğu için ayrıca test ediliyor.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">04</span> <span data-i18n="common.designnotes">Tasarım notları</span></h2>
+        <div class="prose">
+          <p data-i18n="oncall.n1"><strong>Olaylar arası çakışma kontrolü yok:</strong> calendar'daki iki etkinlik gerçekten çakışabilir; iki olay çakışmaz. Bu yüzden <code>open_incident</code>'ın tek koruması <code>idempotencyKey</code> ile tekrar-deneme dedup'ı — calendar'daki gibi ayrı bir çakışma kapısına gerek yok.</p>
+          <p data-i18n="oncall.n2"><strong><code>force</code> her araçta farklı bir şey ifade eder:</strong> <code>ack_incident</code>'ta farklı birine yeniden atama, <code>resolve_incident</code>'ta bir durumu atlayarak doğrudan çözme. İkisi de kendi tool açıklamasında ayrı ayrı belgelenir — tek bir ortak "override" anlamı ima edilmez.</p>
+          <p data-i18n="oncall.n3"><strong>Tool annotations:</strong> her araç <code>readOnlyHint</code>/<code>destructiveHint</code>/<code>idempotentHint</code>/<code>openWorldHint</code>'i açıkça bildirir — istemcinin, açıklama metnini ayrıştırmadan bir çağrıyı onay arkasına alıp almayacağına karar vermesi için.</p>
+          <p data-i18n="oncall.n4"><strong><code>incident://{id}</code> resource'u yok:</strong> bu geçiş için bilinçli olarak eklenmedi — <code>get_incident</code> aynı sorguyu zaten karşılıyor. Bkz. <code>design.md</code> için gerekçe.</p>
+        </div>
+      </section>
+    </section>
+
     <div class="footlinks" data-i18n="footer.text">
-      Bu sayfa, mcp-servers deposundaki 5 sunucunun mimarisini, araçlarını ve inşa sırasında öğrenilen dersleri belgeler.
+      Bu sayfa, mcp-servers deposundaki 6 sunucunun mimarisini, araçlarını, otomatik testlerini ve inşa sırasında öğrenilen dersleri belgeler.
     </div>
   </main>
 </div>
@@ -1314,7 +1425,7 @@ window.__MCP_I18N__ = {
 "badge.readonly": {tr:"Salt-okunur", en:"Read-only"},
 
 "books.d.caption": {tr:"Yanıt, <code>fields=</code> parametresiyle sadece gereken ~9 alana indirgenir (title, authors, year, coverUrl, ...) — modelin işlemesi gereken bağlam küçük tutulur.", en:"The response is trimmed via the <code>fields=</code> param down to the ~9 fields actually needed (title, authors, year, coverUrl, ...) — keeps the context the model has to read small."},
-"books.eyebrow": {tr:"Sunucu 3 / 5", en:"Server 3 / 5"},
+"books.eyebrow": {tr:"Sunucu 3 / 6", en:"Server 3 / 6"},
 "books.n1": {tr:"<strong>Zaman aşımı:</strong> her dış HTTP çağrısı <code>AbortController</code> ile 8 saniyede kesilir — takılı kalan bir üst servis, aracı süresiz bekletemez.", en:"<strong>Timeout:</strong> every outbound HTTP call is bounded to 8s via <code>AbortController</code> — a hung upstream can't hang the tool call indefinitely."},
 "books.n2": {tr:"<strong>Sayfalama passthrough:</strong> <code>limit</code>/<code>page</code> doğrudan OpenLibrary'nin kendi parametreleridir — davranış (ve <code>numFound</code>) üst API ile birebir eşleşir, ekstra çeviri mantığı yok.", en:"<strong>Pagination passthrough:</strong> <code>limit</code>/<code>page</code> map 1:1 to OpenLibrary's own paging params — behavior (and <code>numFound</code>) matches the upstream API exactly, no extra translation logic."},
 "books.story.badge": {tr:"Not", en:"Note"},
@@ -1346,7 +1457,7 @@ window.__MCP_I18N__ = {
 "cal.env.googleyes": {tr:"google modunda evet", en:"Yes, in google mode"},
 "cal.env.readids": {tr:"<strong>Okuma</strong> kapsamı — virgülle ayrılmış liste ya da seçili tüm takvimleri otomatik keşfeden <code>all</code>.", en:"<strong>Read</strong> scope — a comma-separated list, or <code>all</code> to auto-discover every selected calendar."},
 "cal.env.writeid": {tr:"<strong>Yazma</strong> hedefi — ad (örn. <code>Health</code>) ya da ID. Varsayılan <code>primary</code>.", en:"The <strong>write</strong> target — name (e.g. <code>Health</code>) or ID. Defaults to <code>primary</code>."},
-"cal.eyebrow": {tr:"Sunucu 2 / 5", en:"Server 2 / 5"},
+"cal.eyebrow": {tr:"Sunucu 2 / 6", en:"Server 2 / 6"},
 "cal.multi.h": {tr:"Birden fazla takvim &amp; ortam değişkenleri", en:"Multiple calendars &amp; environment variables"},
 "cal.multi.p1": {tr:"<strong>Neden okuma/yazma ayrı:</strong> “tüm takvimimde çakışma var mı” ile “hangi takvime ekleyeceğim” farklı sorular. <code>resolveCalendarId()</code> bir takvim adını (örn. “Health”) gerçek Google takvim ID'sine <code>calendarList.list()</code> üzerinden çözer ve önbelleğe alır.", en:"<strong>Why read/write are separate:</strong> “does anything on any of my calendars conflict” and “which calendar do I book into” are different questions. <code>resolveCalendarId()</code> resolves a calendar name (e.g. “Health”) to a real Google calendar ID via <code>calendarList.list()</code>, cached after first lookup."},
 "cal.multi.p2": {tr:"<strong>Yetki notu:</strong> Bir takvimi görebilmek, ona yazabileceğin anlamına gelmez — Google bunu ayrı bir paylaşım izniyle yönetir (“Etkinliklerde değişiklik yap”). 403 hatası bir kod/config sorunu değil, gerçek bir izin sorunudur; sunucu bu ikisini net biçimde ayırt eden bir hata mesajı döner.", en:"<strong>Permissions note:</strong> being able to see a calendar doesn't mean you can write to it — Google manages that separately via a sharing permission (“Make changes to events”). A 403 is a real permission problem, not a config bug; the server returns an error message that clearly distinguishes the two."},
@@ -1377,7 +1488,7 @@ window.__MCP_I18N__ = {
 "infra.d.diagnose": {tr:"prompt şablonu", en:"prompt template"},
 "infra.d.echo": {tr:"tool · smoke test", en:"tool · smoke test"},
 "infra.d.sysinfo": {tr:"resource → os.*()", en:"resource → os.*()"},
-"infra.eyebrow": {tr:"Sunucu 1 / 5", en:"Server 1 / 5"},
+"infra.eyebrow": {tr:"Sunucu 1 / 6", en:"Server 1 / 6"},
 "infra.n1": {tr:"<code>isPortOpen()</code> içindeki mantık küçük ama öğretici: bir <code>net.Socket</code> açılır, <code>connect</code> / <code>timeout</code> / <code>error</code> olaylarından hangisi önce gerçekleşirse o kazanır — <code>Promise</code> ilk olayda çözülür (resolve), soket her durumda <code>destroy()</code> edilir.", en:"The logic in <code>isPortOpen()</code> is small but instructive: a <code>net.Socket</code> is opened and whichever of <code>connect</code> / <code>timeout</code> / <code>error</code> fires first wins — the <code>Promise</code> resolves on the first event, and the socket is always <code>destroy()</code>ed."},
 "infra.n2": {tr:"Loglar <code>console.error()</code> ile <strong>stderr</strong>'e yazılır — <code>stdout</code> MCP protokol kanalı olduğu için oraya yazılan herhangi bir şey JSON-RPC çerçevelemesini bozar. Bu, yeni bir sunucu yazarken yapılan en yaygın ilk hata.", en:"Logs go to <strong>stderr</strong> via <code>console.error()</code> — <code>stdout</code> is the MCP protocol channel, so anything written there corrupts JSON-RPC framing. This is the most common first bug when writing a new server."},
 "infra.n3": {tr:"Girdi doğrulama zod ile yapılır — şema hem çalışma zamanı doğrulaması hem de modelin gördüğü araç imzasıdır; dış girdi asla ham güvenilmez.", en:"Input validation is via zod — the schema is both the runtime check and the tool signature the model sees; external input is never trusted raw."},
@@ -1449,7 +1560,7 @@ window.__MCP_I18N__ = {
 "wa.d.saved": {tr:"Oturum diske kaydedilir", en:"Session saved to disk"},
 "wa.d.scan": {tr:"Telefonla tara", en:"Scan with phone"},
 "wa.d.terminal": {tr:"terminalde", en:"in terminal"},
-"wa.eyebrow": {tr:"Sunucu 5 / 5", en:"Server 5 / 5"},
+"wa.eyebrow": {tr:"Sunucu 5 / 6", en:"Server 5 / 6"},
 "wa.t.chats": {tr:"Sohbetlerin, en son etkinliğe göre sıralanmış listesi; <code>unreadOnly</code> filtresi opsiyonel.", en:"Your chats, sorted by most recent activity; optional <code>unreadOnly</code> filter."},
 "wa.t.flow": {tr:"Sohbetlere bak → bağlamı oku → taslak hazırla → <strong>onay bekle</strong> → gönder.", en:"Check chats → read context → draft a reply → <strong>wait for approval</strong> → send."},
 "wa.t.messages": {tr:"Bir sohbetteki son mesajlar. Medya mesajları <code>[image]</code> gibi yer tutucularla gösterilir.", en:"Recent messages in a chat. Media messages show as placeholders like <code>[image]</code>."},
@@ -1462,14 +1573,47 @@ window.__MCP_I18N__ = {
 
 "wx.d.caption": {tr:"İki alt araç da bağımsız olarak dışa açıktır — bir yer adı birden çok gerçek konuma denk gelebileceğinde (ör. “Springfield”) modelin adayları görüp seçebilmesi için.", en:"Both underlying tools stay exposed on their own — for when a place name can match several real locations (e.g. “Springfield”) and the model needs to see and pick a candidate."},
 "wx.d.default": {tr:"varsayılan · tek çağrı", en:"default · one call"},
-"wx.eyebrow": {tr:"Sunucu 4 / 5", en:"Server 4 / 5"},
+"wx.eyebrow": {tr:"Sunucu 4 / 6", en:"Server 4 / 6"},
 "wx.n1": {tr:"<strong>Şeffaf belirsizlik:</strong> “Munich” tek başına Almanya'daki şehri doğru bulur (Open-Meteo yaklaşık nüfusa göre sıralar) ama <code>alternativeMatches: 4</code> döner — model ya da kullanıcı bunun bir tahmin olduğunu bilir. “Munich, Germany” gibi niteleyici eklemek genelde iki-adımlı akışa hiç gerek bırakmaz.", en:"<strong>Transparent ambiguity:</strong> bare “Munich” still resolves to the right German city (Open-Meteo ranks roughly by population) but returns <code>alternativeMatches: 4</code> — so the model or user knows it was a guess. Qualifying it as “Munich, Germany” usually avoids needing the two-step flow at all."},
 "wx.n2": {tr:"<strong>Kod çevirisi:</strong> WMO hava kodları (0, 1, 2, 3, 61, 95 ...) bir <code>Record&lt;number,string&gt;</code> tablosuyla “Clear sky”, “Overcast”, “Thunderstorm” gibi metne çevrilir — model kod tablosunu ezbere bilmek zorunda kalmaz.", en:"<strong>Code translation:</strong> WMO weather codes (0, 1, 2, 3, 61, 95 ...) are mapped via a <code>Record&lt;number,string&gt;</code> table to text like “Clear sky,” “Overcast,” “Thunderstorm” — the model doesn't need to memorize the code table."},
 "wx.t.brief": {tr:"Önce <code>get_weather_by_location</code>'ı dener; belirsizse <code>geocode_location</code> + <code>get_weather</code>'a düşer.", en:"Tries <code>get_weather_by_location</code> first; falls back to <code>geocode_location</code> + <code>get_weather</code> if ambiguous."},
 "wx.t.byloc": {tr:"“Munich” ya da “Munich, Germany” gibi bir yer adını en iyi eşleşmeye göre çözüp hava durumunu döner. <code>alternativeMatches</code> alanı kaç başka adayın olduğunu söyler — belirsizlik sinyali.", en:"Resolves a place name like “Munich” or “Munich, Germany” to its best match and returns the weather. <code>alternativeMatches</code> reports how many other candidates existed — an ambiguity signal."},
 "wx.t.geocode": {tr:"Bir yer adının TÜM aday eşleşmelerini (lat/lon, ülke, nüfus) döner.", en:"Returns ALL candidate matches for a place name (lat/lon, country, population)."},
 "wx.t.getweather": {tr:"Koordinat bazlı mevcut durum + günlük tahmin. WMO hava kodları düz metne çevrilir (ör. “Overcast”).", en:"Coordinate-based current conditions + daily forecast. WMO weather codes are translated to plain text (e.g. “Overcast”)."},
-"wx.tagline": {tr:"Open-Meteo'nun ücretsiz, anahtarsız geocoding + tahmin API'leri üzerinden konum bazlı hava durumu. Varsayılan yol tek çağrıda: yer adı ver, mevcut durum + günlük tahmini al.", en:"Location-based weather via Open-Meteo's free, keyless geocoding + forecast APIs. The default path is one call: give a place name, get current conditions + a daily forecast."}
+"wx.tagline": {tr:"Open-Meteo'nun ücretsiz, anahtarsız geocoding + tahmin API'leri üzerinden konum bazlı hava durumu. Varsayılan yol tek çağrıda: yer adı ver, mevcut durum + günlük tahmini al.", en:"Location-based weather via Open-Meteo's free, keyless geocoding + forecast APIs. The default path is one call: give a place name, get current conditions + a daily forecast."},
+
+"oncall.badge.tested": {tr:"14 otomatik test", en:"14 automated tests"},
+"oncall.d.ack": {tr:"tool · idempotent / force ile reassign", en:"tool · idempotent / force to reassign"},
+"oncall.d.caption": {tr:"Durum makinesi: <code>open → acked → resolved</code>. Geçersiz geçişler (ör. çözülmüş bir olayı tekrar onaylamak) reddedilir; <code>force:true</code> iki farklı anlama gelir — <code>ack_incident</code>'ta farklı birine yeniden atama, <code>resolve_incident</code>'ta onaysız doğrudan çözme.", en:"State machine: <code>open → acked → resolved</code>. Invalid transitions (e.g. re-acking a resolved incident) are rejected; <code>force:true</code> means two different things — reassigning to a different assignee in <code>ack_incident</code>, resolving directly without acking in <code>resolve_incident</code>."},
+"oncall.d.open": {tr:"tool · idempotencyKey ile dedup", en:"tool · dedup via idempotencyKey"},
+"oncall.d.prompt": {tr:"prompt · list → ack → resolve", en:"prompt · list → ack → resolve"},
+"oncall.d.read": {tr:"tool · salt-okunur", en:"tool · read-only"},
+"oncall.d.resolve": {tr:"tool · idempotent / force ile atla", en:"tool · idempotent / force to skip ack"},
+"oncall.eyebrow": {tr:"Sunucu 6 / 6", en:"Server 6 / 6"},
+"oncall.f.backend.p": {tr:"calendar'ın <code>CalendarBackend</code>'iyle aynı desen: <code>OnCallBackend</code> arayüzü sadece araçların ihtiyaç duyduğu 5 metodu tanımlar (<code>findByIdempotencyKey</code>, <code>create</code>, <code>get</code>, <code>list</code>, <code>save</code>); <code>InMemoryOnCallBackend</code> bunu bir <code>Map</code> üzerinde uygular.", en:"Same pattern as calendar's <code>CalendarBackend</code>: the <code>OnCallBackend</code> interface defines only the 5 methods the tools need (<code>findByIdempotencyKey</code>, <code>create</code>, <code>get</code>, <code>list</code>, <code>save</code>); <code>InMemoryOnCallBackend</code> implements it over a <code>Map</code>."},
+"oncall.f.backend.purpose": {tr:"sözleşme + bellek-içi backend", en:"the contract + in-memory backend"},
+"oncall.f.server.p1": {tr:"Her mutating tool aynı desende: mevcut olayı bul → durumuna göre (zaten yapılmış / geçersiz geçiş / gerçek işlem) üç yoldan birine dallan → yapılandırılmış sonucu döndür. <code>ack_incident</code>/<code>resolve_incident</code>'ta \"farklı biri zaten yapmış\" durumu, calendar'daki <code>idempotencyKey</code> karşılaştırmasındaki <code>undefined !== undefined</code> hatasının aynısına düşmemek için assignee'nin doğrudan eşitliğiyle kontrol edilir — opsiyonel bir alan değil, zorunlu bir alan olduğu için o tuzak burada oluşmuyor.", en:"Every mutating tool follows the same pattern: find the incident → branch on its state into one of three paths (already done / invalid transition / real action) → return a structured result. In <code>ack_incident</code>/<code>resolve_incident</code>, the \"someone else already did this\" case is checked via direct assignee equality rather than an optional-key comparison — since <code>assignee</code> is required, not optional, this doesn't fall into the same <code>undefined !== undefined</code> trap calendar's idempotencyKey check originally did."},
+"oncall.f.server.p2": {tr:"Tüm araçları modülün <code>server</code> singleton'ına <em>değil</em>, dışa aktarılan bu fonksiyona kaydeder — testlerin her seferinde taze bir <code>McpServer</code> + taze bir <code>InMemoryOnCallBackend</code> ile çağırıp durumu sıfırlayabilmesi için.", en:"Registers all tools onto this exported function rather than the module's <code>server</code> singleton — so tests can call it with a fresh <code>McpServer</code> + a fresh <code>InMemoryOnCallBackend</code> each time, resetting state between tests."},
+"oncall.f.server.purpose": {tr:"araç katmanı", en:"the tool layer"},
+"oncall.f.test.p": {tr:"Sunucuyu gerçek bir <code>Client</code> + <code>InMemoryTransport</code> çifti üzerinden sürer (mock değil, gerçek MCP protokol yolu). Mutlu yol, zorunlu-alan-eksik, çakışma+force, idempotent retry ve state-transition red senaryolarının hepsi ayrı test — özellikle \"opsiyonel alan hiç verilmeden\" senaryosu, calendar'daki gerçek bug'ın tam da saklandığı yer olduğu için ayrıca test ediliyor.", en:"Drives the server over a real <code>Client</code> + <code>InMemoryTransport</code> pair (not a mock — the real MCP protocol path). Happy path, required-field-omitted, conflict+force, idempotent retry, and state-transition-rejection scenarios are each their own test — the \"optional field genuinely omitted\" case in particular, since that's exactly where calendar's real bug hid."},
+"oncall.f.test.purpose": {tr:"vitest · 14 test", en:"vitest · 14 tests"},
+"oncall.n1": {tr:"<strong>Olaylar arası çakışma kontrolü yok:</strong> calendar'daki iki etkinlik gerçekten çakışabilir; iki olay çakışmaz. Bu yüzden <code>open_incident</code>'ın tek koruması <code>idempotencyKey</code> ile tekrar-deneme dedup'ı — calendar'daki gibi ayrı bir çakışma kapısına gerek yok.", en:"<strong>No cross-incident conflict check:</strong> two calendar events can genuinely overlap; two incidents don't collide. So <code>open_incident</code>'s only guard is <code>idempotencyKey</code> retry dedup — no separate conflict gate needed like calendar's."},
+"oncall.n2": {tr:"<strong><code>force</code> her araçta farklı bir şey ifade eder:</strong> <code>ack_incident</code>'ta farklı birine yeniden atama, <code>resolve_incident</code>'ta bir durumu atlayarak doğrudan çözme. İkisi de kendi tool açıklamasında ayrı ayrı belgelenir — tek bir ortak \"override\" anlamı ima edilmez.", en:"<strong><code>force</code> means something different per tool:</strong> reassigning to a different assignee in <code>ack_incident</code>, skipping a state to resolve directly in <code>resolve_incident</code>. Each is documented in its own tool description rather than implying one shared \"override\" semantic."},
+"oncall.n3": {tr:"<strong>Tool annotations:</strong> her araç <code>readOnlyHint</code>/<code>destructiveHint</code>/<code>idempotentHint</code>/<code>openWorldHint</code>'i açıkça bildirir — istemcinin, açıklama metnini ayrıştırmadan bir çağrıyı onay arkasına alıp almayacağına karar vermesi için.", en:"<strong>Tool annotations:</strong> every tool explicitly declares <code>readOnlyHint</code>/<code>destructiveHint</code>/<code>idempotentHint</code>/<code>openWorldHint</code> — so a client can decide whether to gate a call behind approval without parsing the description text."},
+"oncall.n4": {tr:"<strong><code>incident://{id}</code> resource'u yok:</strong> bu geçiş için bilinçli olarak eklenmedi — <code>get_incident</code> aynı sorguyu zaten karşılıyor. Bkz. <code>design.md</code> için gerekçe.", en:"<strong>No <code>incident://{id}</code> resource:</strong> deliberately left out for this pass — <code>get_incident</code> already covers the same lookup. See <code>design.md</code> for the tradeoff."},
+"oncall.t.ack": {tr:"Olayı sahiplenir. Aynı kişi tekrar ack ederse no-op (idempotent); farklı biri <code>force:true</code> olmadan reddedilir; çözülmüş bir olay hiçbir zaman ack edilemez.", en:"Takes ownership of an incident. Re-acking with the same assignee is a no-op (idempotent); a different assignee is rejected without <code>force:true</code>; a resolved incident can never be acked."},
+"oncall.t.flow": {tr:"Zinciri belgeler: açık olayları listele → detayına bak → sahiplen → düzelt → çöz. <code>force</code>'u onaysız kullanma uyarısı içerir.", en:"Documents the chain: list open incidents → check detail → ack → fix it → resolve. Includes a warning not to force without approval."},
+"oncall.t.get": {tr:"Bir olayın tüm detayını döner.", en:"Returns full detail for one incident."},
+"oncall.t.list": {tr:"Olayları opsiyonel filtrelerle listeler.", en:"Lists incidents with optional filters."},
+"oncall.t.open": {tr:"Yeni bir olayı <code>open</code> durumunda oluşturur. Olaylar birbiriyle çakışmaz (calendar'ın aksine) — tek koruma <code>idempotencyKey</code> ile tekrar denemede aynı kaydı döndürmek.", en:"Creates a new incident in <code>open</code> status. Incidents don't collide with each other (unlike calendar) — the only guard is returning the same record on a retried call via <code>idempotencyKey</code>."},
+"oncall.t.resolve": {tr:"Olayı çözer. Zaten çözülmüşse no-op; henüz onaylanmamış (<code>open</code>) bir olayı çözmek <code>force:true</code> ister.", en:"Resolves an incident. A no-op if already resolved; resolving one that hasn't been acked (still <code>open</code>) requires <code>force:true</code>."},
+"oncall.tagline": {tr:"Bir olayı (incident) yaşam döngüsü boyunca takip eden bir sunucu — aç → onayla (ack) → çöz (resolve). Durum-geçişi kapılı, idempotent, ve <code>force</code> ile bilinçli override.", en:"A server that tracks an incident through its lifecycle — open → ack → resolve. State-transition gated, idempotent, with deliberate <code>force</code> overrides."},
+
+"ov.conv.annotations": {tr:"Her araç <code>readOnlyHint</code>/<code>destructiveHint</code>/<code>idempotentHint</code>/<code>openWorldHint</code> bildirir — istemcinin onay isteyip istemeyeceğine karar vermesi için makine-okunur sinyal.", en:"Every tool declares <code>readOnlyHint</code>/<code>destructiveHint</code>/<code>idempotentHint</code>/<code>openWorldHint</code> — machine-readable signal for whether a client should gate the call behind approval."},
+"ov.conv.design": {tr:"Her sunucunun, kodlanmadan önce doldurulan hafif (light) tasarım şablonu kopyası — bkz. <code>templates/</code>.", en:"Each server's filled-in copy of the light design template, completed before coding — see <code>templates/</code>."},
+"ov.conv.test": {tr:"Her sunucunun kendi <code>server.test.ts</code>'i var; dış HTTP/ağ/tarayıcı bağımlılıkları mock'lanır, hepsi offline ve tek komutla çalışır.", en:"Every server has its own <code>server.test.ts</code>; external HTTP/network/browser dependencies are mocked, so the whole suite runs offline with one command."},
+"ov.servers.oncall": {tr:"Olay (incident) triyajı: aç/onayla/çöz", en:"Incident triage: open/ack/resolve"},
+"ov.servers.oncall.dep": {tr:"Bellek-içi", en:"In-memory"}
 };
 
 </script>

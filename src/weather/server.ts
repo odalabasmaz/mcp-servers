@@ -70,7 +70,7 @@ function describeWeatherCode(code: number): string {
   return WMO_CODES[code] ?? `Unknown (WMO code ${code})`;
 }
 
-const server = new McpServer({
+export const server = new McpServer({
   name: "weather-mcp-server",
   version: "1.0.0",
 });
@@ -336,7 +336,9 @@ async function main() {
   console.error("weather-mcp-server running on stdio");
 }
 
-main().catch((err) => {
-  console.error("Fatal error starting weather-mcp-server:", err);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error("Fatal error starting weather-mcp-server:", err);
+    process.exit(1);
+  });
+}

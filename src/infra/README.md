@@ -109,6 +109,17 @@ printf '%s\n' \
 | node dist/infra/server.js
 ```
 
+### 4. Example prompts (Claude Code CLI)
+
+Once registered (`claude mcp add infra ...`), just ask in plain language —
+no special syntax needed:
+
+- "Echo back 'hello world'"
+- "Is port 5432 open on localhost?"
+- "Check if example.com is listening on port 443"
+- "Show me the system info for this host" (uses the `system://info` resource)
+- "Use the diagnose_service prompt for the 'checkout' service — it's timing out under load"
+
 ## Design notes (the "why")
 
 - **stdio transport** — zero network surface; the client owns the process

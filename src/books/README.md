@@ -90,6 +90,15 @@ printf '%s\n' \
 | node dist/books/server.js
 ```
 
+### Example prompts (Claude Code CLI)
+
+Once registered (`claude mcp add books ...`), just ask in plain language:
+
+- "Search for books about dune"
+- "Find books by Frank Herbert"
+- "Show me the second page of results for 'science fiction' subject, 5 per page"
+- "Look up the book 'Project Hail Mary'"
+
 ## Design notes
 
 - **Read-only, no auth** — OpenLibrary's search endpoint is public; no API

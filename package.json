@@ -8,25 +8,30 @@
     "calendar-mcp-server": "dist/calendar/server.js",
     "books-mcp-server": "dist/books/server.js",
     "weather-mcp-server": "dist/weather/server.js",
-    "whatsapp-mcp-server": "dist/whatsapp/server.js"
+    "whatsapp-mcp-server": "dist/whatsapp/server.js",
+    "oncall-mcp-server": "dist/oncall/server.js"
   },
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
     "start:infra": "node dist/infra/server.js",
     "start:calendar": "node dist/calendar/server.js",
     "start:books": "node dist/books/server.js",
     "start:weather": "node dist/weather/server.js",
     "start:whatsapp": "node dist/whatsapp/server.js",
+    "start:oncall": "node dist/oncall/server.js",
     "dev:infra": "tsx watch src/infra/server.ts",
     "dev:calendar": "tsx watch src/calendar/server.ts",
     "dev:books": "tsx watch src/books/server.ts",
     "dev:weather": "tsx watch src/weather/server.ts",
     "dev:whatsapp": "tsx watch src/whatsapp/server.ts",
+    "dev:oncall": "tsx watch src/oncall/server.ts",
     "inspect:infra": "npx @modelcontextprotocol/inspector tsx src/infra/server.ts",
     "inspect:calendar": "npx @modelcontextprotocol/inspector tsx src/calendar/server.ts",
     "inspect:books": "npx @modelcontextprotocol/inspector tsx src/books/server.ts",
     "inspect:weather": "npx @modelcontextprotocol/inspector tsx src/weather/server.ts",
     "inspect:whatsapp": "npx @modelcontextprotocol/inspector tsx src/whatsapp/server.ts",
+    "inspect:oncall": "npx @modelcontextprotocol/inspector tsx src/oncall/server.ts",
     "google:auth": "tsx src/calendar/scripts/get-google-refresh-token.ts",
     "whatsapp:pair": "tsx src/whatsapp/scripts/pair.ts"
   },
@@ -41,6 +46,7 @@
     "@types/node": "^22.20.1",
     "@types/qrcode-terminal": "^0.12.2",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
   }
 }

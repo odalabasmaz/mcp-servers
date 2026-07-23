@@ -106,9 +106,14 @@ async function createBackend(): Promise<CalendarBackend> {
 
 // Assigned in main(), before the transport connects — see there for why
 // backend creation is deferred instead of a top-level await.
-let backend: CalendarBackend;
+export let backend: CalendarBackend;
 
-const server = new McpServer({
+/** Test-only seam: assign `backend` without going through main()/stdio. */
+export async function initBackendForTesting(b?: CalendarBackend): Promise<void> {
+  backend = b ?? (await createBackend());
+}
+
+export const server = new McpServer({
   name: "calendar-mcp-server",
   version: "1.0.0",
 });
@@ -373,7 +378,9 @@ async function main() {
   console.error("calendar-mcp-server running on stdio");
 }
 
-main().catch((err) => {
-  console.error("Fatal error starting calendar-mcp-server:", err);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error("Fatal error starting calendar-mcp-server:", err);
+    process.exit(1);
+  });
+}

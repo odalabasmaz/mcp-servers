@@ -91,6 +91,17 @@ printf '%s\n' \
 To book, pick a free slot (the seed calendar is busy 09:00–09:30 and 14:00–15:00
 UTC on 2026-07-20) and add a stable `idempotencyKey` so retries are safe.
 
+### Example prompts (Claude Code CLI)
+
+Once registered (`claude mcp add calendar ...`), just ask in plain language:
+
+- "What's on my calendar between 9am and 5pm tomorrow?"
+- "Find me a free 30-minute slot this afternoon"
+- "Does 2pm–3pm on 2026-07-20 conflict with anything?"
+- "Schedule an interview with jane@example.com for 11am–11:45am on 2026-07-20"
+- "Cancel the standup event"
+- "Use the schedule_interview_flow prompt to find and book a 45-minute slot with john@example.com tomorrow"
+
 ---
 
 ## Google Calendar
