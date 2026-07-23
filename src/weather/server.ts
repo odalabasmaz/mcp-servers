@@ -196,6 +196,12 @@ server.registerTool(
       location: z.string().min(1).describe("Place name, e.g. 'Munich, Germany'"),
       days: z.number().int().min(1).max(16).default(3).describe("Number of forecast days, 1-16"),
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ location, days }) => {
     let candidates: GeocodeResult[];
@@ -246,6 +252,12 @@ server.registerTool(
       query: z.string().min(1).describe("Place name, e.g. 'Frankfurt' or 'Springfield'"),
       count: z.number().int().min(1).max(20).default(5).describe("Max candidates to return"),
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ query, count }) => {
     let results: GeocodeResult[];
@@ -271,6 +283,12 @@ server.registerTool(
       latitude: z.number().min(-90).max(90).describe("Latitude, decimal degrees"),
       longitude: z.number().min(-180).max(180).describe("Longitude, decimal degrees"),
       days: z.number().int().min(1).max(16).default(3).describe("Number of forecast days, 1-16"),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
   async ({ latitude, longitude, days }) => {

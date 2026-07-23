@@ -35,6 +35,12 @@ server.registerTool(
     title: "Echo",
     description: "Echo back a message. Handy smoke-test for the connection.",
     inputSchema: { message: z.string().describe("Text to echo back") },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   async ({ message }) => ({
     content: [{ type: "text", text: `echo: ${message}` }],
@@ -60,6 +66,12 @@ server.registerTool(
         .max(10_000)
         .default(2000)
         .describe("Connection timeout in milliseconds"),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
   async ({ host, port, timeoutMs }) => {

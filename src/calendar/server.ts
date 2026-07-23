@@ -129,6 +129,12 @@ server.registerTool(
       rangeStart: isoInstant.describe("Range start, UTC ISO-8601"),
       rangeEnd: isoInstant.describe("Range end, UTC ISO-8601"),
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ rangeStart, rangeEnd }) => {
     if (Date.parse(rangeEnd) <= Date.parse(rangeStart)) {
@@ -155,6 +161,12 @@ server.registerTool(
         .positive()
         .max(24 * 60)
         .describe("Required slot length in minutes"),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
   async ({ rangeStart, rangeEnd, durationMinutes }) => {
@@ -193,6 +205,12 @@ server.registerTool(
     inputSchema: {
       start: isoInstant.describe("Proposed start, UTC ISO-8601"),
       end: isoInstant.describe("Proposed end, UTC ISO-8601"),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
   async ({ start, end }) => {
@@ -238,6 +256,12 @@ server.registerTool(
           "Which calendar to book into — by name (e.g. 'Health') or ID. Defaults to the " +
             "server's configured write calendar. Ignored by the in-memory backend."
         ),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
   async ({ title, start, end, attendees, idempotencyKey, force, calendarId }) => {
@@ -308,6 +332,12 @@ server.registerTool(
     title: "Cancel event",
     description: "Cancel a previously scheduled event by id.",
     inputSchema: { id: z.string().min(1).describe("Event id to cancel") },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ id }) => {
     let removed: boolean;

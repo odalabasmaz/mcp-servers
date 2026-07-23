@@ -143,6 +143,12 @@ server.registerTool(
         .describe("Results per page, 1-100"),
       page: z.number().int().min(1).default(1).describe("1-based page number"),
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ q, title, author, subject, limit, page }) => {
     if (!q && !title && !author && !subject) {

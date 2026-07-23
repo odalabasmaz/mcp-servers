@@ -109,6 +109,12 @@ server.registerTool(
     title: "WhatsApp connection status",
     description: "Check whether the WhatsApp session is connected and ready to use. Read-only.",
     inputSchema: {},
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async () => {
     return toolText({ connectionState, ownNumber });
@@ -125,6 +131,12 @@ server.registerTool(
     inputSchema: {
       limit: z.number().int().min(1).max(100).default(20).describe("Max chats to return"),
       unreadOnly: z.boolean().default(false).describe("Only include chats with unread messages"),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
   async ({ limit, unreadOnly }) => {
@@ -156,6 +168,12 @@ server.registerTool(
       chatId: z.string().min(1).describe("Chat id, e.g. '491701234567@c.us' or a group id ending '@g.us'"),
       limit: z.number().int().min(1).max(100).default(20).describe("Max messages to return"),
     },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   async ({ chatId, limit }) => {
     const notReady = requireReady();
@@ -184,6 +202,12 @@ server.registerTool(
     inputSchema: {
       to: z.string().min(1).describe("Phone number or chatId to send to"),
       text: z.string().min(1).describe("Message text"),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
     },
   },
   async ({ to, text }) => {
