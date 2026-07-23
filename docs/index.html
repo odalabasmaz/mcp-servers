@@ -88,6 +88,9 @@ body{
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
 }
+/* avoid a flash of the authored (Turkish) fallback text before JS applies
+   the default language on load */
+html:not([data-i18n-ready]) .shell{visibility:hidden;}
 @media (prefers-reduced-motion: reduce){
   *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
 }
@@ -421,6 +424,42 @@ td[data-num], th[data-num]{font-variant-numeric:tabular-nums; text-align:right;}
   margin-top:.9rem; padding-top:.8rem; border-top:1px dashed var(--line);
 }
 
+/* file walkthrough cards */
+.filecard{
+  border:1px solid var(--line);
+  background:var(--card);
+  border-radius:9px;
+  margin:1.3rem 0;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+.filecard-head{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:.15rem .7rem;
+  padding:.7rem 1.1rem;
+  background:var(--card-2);
+  border-bottom:1px solid var(--line);
+}
+.filecard-head .path{
+  font-family:var(--font-mono); font-size:.86rem; font-weight:500; color:var(--signal-ink);
+}
+.filecard-head .purpose{
+  font-family:var(--font-ui); font-size:.76rem; color:var(--text-faint);
+}
+.filecard-body{padding:1.1rem 1.2rem .3rem;}
+.filecard-body p{
+  font-family:var(--font-ui); font-size:.9rem; color:var(--text);
+  max-width:none; line-height:1.6;
+}
+.filestep{margin:0 0 1.15rem;}
+.filestep .stephead{
+  font-family:var(--font-mono); font-size:.78rem; font-weight:500;
+  color:var(--wire); display:block; margin-bottom:.3rem;
+}
+.filecard-body pre{margin:.6rem 0 1rem;}
+
 /* code blocks */
 pre{
   font-family:var(--font-mono);
@@ -638,7 +677,54 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
       </section>
 
       <section class="block">
-        <h2><span class="num">03</span> <span data-i18n="common.designnotes">Tasarım notları</span></h2>
+        <h2><span class="num">03</span> <span data-i18n="common.files">Dosya dosya</span></h2>
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/infra/server.ts</span>
+            <span class="purpose" data-i18n="infra.f.purpose">tek dosya — sunucunun tamamı, ~190 satır</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <span class="stephead" data-i18n="infra.f.s1h">Kurulum</span>
+              <p data-i18n="infra.f.s1p">SDK'dan <code>McpServer</code> ve <code>StdioServerTransport</code>, doğrulama için <code>zod</code>, Node'un yerleşik <code>net</code> ve <code>os</code> modülleri import edilir. Tek bir <code>McpServer</code> örneği <code>infra-mcp-server</code> adıyla oluşturulur.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">echo</span>
+              <p data-i18n="infra.f.s2p">En basit araç: <code>message:string</code> girdisini zod ile doğrular, başına <code>echo: </code> ekleyip aynen geri döner. Amacı, herhangi bir gerçek işlem yapmadan bağlantının uçtan uca çalıştığını doğrulamak.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">check_port + isPortOpen()</span>
+              <p data-i18n="infra.f.s3p">Araç <code>host</code>, <code>port</code> (1–65535) ve <code>timeoutMs</code> (varsayılan 2000, üst sınır 10000) alır, <code>isPortOpen()</code>'ı çağırıp "OPEN"/"CLOSED" metnini döner. Asıl mantık <code>isPortOpen()</code> içinde: bir <code>net.Socket</code> açılır, <code>connect</code>/<code>timeout</code>/<code>error</code> olaylarından hangisi <em>önce</em> tetiklenirse Promise onunla çözülür; hangisi olursa olsun ortak <code>done()</code> callback'i soketi her zaman <code>destroy()</code> eder — soket asla sızdırılmaz.</p>
+              <pre>function isPortOpen(host, port, timeoutMs) {
+  return new Promise((resolve) =&gt; {
+    const socket = new net.Socket();
+    const done = (result) =&gt; { socket.destroy(); resolve(result); };
+    socket.setTimeout(timeoutMs);
+    socket.once("connect", () =&gt; done(true));
+    socket.once("timeout",  () =&gt; done(false));
+    socket.once("error",    () =&gt; done(false));
+    socket.connect(port, host);
+  });
+}</pre>
+            </div>
+            <div class="filestep">
+              <span class="stephead">system://info <span style="color:var(--text-faint)">(resource)</span></span>
+              <p data-i18n="infra.f.s4p"><code>registerTool</code> değil <code>registerResource</code> ile kaydedilir — çağrılabilir bir eylem değil, salt-okunur bağlam. Handler, <code>collectSystemInfo()</code>'yu çağırır (hostname, platform, CPU sayısı, bellek, uptime, load average — hepsi Node'un <code>os</code> modülünden) ve JSON metin olarak döner.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">diagnose_service <span style="color:var(--text-faint)">(prompt)</span></span>
+              <p data-i18n="infra.f.s5p"><code>service</code> ve <code>symptom</code> string'lerini alır, modele sıralı bir triyaj planı ürettiren tek bir hazır "user" mesajı döner. Kendisi hiçbir aracı çağırmaz — insan ya da agent'ın tutarlı bir yapı elde etmek için çağırdığı bir şablondur.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">main()</span>
+              <p data-i18n="infra.f.s6p">Bir <code>StdioServerTransport</code> bağlanır, sonra <code>console.error</code> ile (stderr'e) çalıştığı loglanır. Tamamı <code>.catch()</code> ile sarılıdır — başlangıçta bir hata olursa süreç net bir mesajla ve çıkış kodu 1 ile sonlanır.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">04</span> <span data-i18n="common.designnotes">Tasarım notları</span></h2>
         <div class="prose">
           <p data-i18n="infra.n1"><code>isPortOpen()</code> içindeki mantık küçük ama öğretici: bir <code>net.Socket</code> açılır, <code>connect</code> / <code>timeout</code> / <code>error</code> olaylarından hangisi önce gerçekleşirse o kazanır — <code>Promise</code> ilk olayda çözülür (resolve), soket her durumda <code>destroy()</code> edilir.</p>
           <p data-i18n="infra.n2">Loglar <code>console.error()</code> ile <strong>stderr</strong>'e yazılır — <code>stdout</code> MCP protokol kanalı olduğu için oraya yazılan herhangi bir şey JSON-RPC çerçevelemesini bozar. Bu, yeni bir sunucu yazarken yapılan en yaygın ilk hata.</p>
@@ -704,7 +790,106 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
       </section>
 
       <section class="block">
-        <h2><span class="num">03</span> <span data-i18n="cal.bug.h">Gerçek bir hata: çakışma kapısı sessizce atlanıyordu</span></h2>
+        <h2><span class="num">03</span> <span data-i18n="common.files">Dosya dosya</span></h2>
+
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/calendar/backend.ts</span>
+            <span class="purpose" data-i18n="cal.f.backend.purpose">sözleşme + varsayılan backend, ~75 satır</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <span class="stephead">CalendarEvent</span>
+              <p data-i18n="cal.f.backend.s1">Alanlar: <code>id</code>, <code>title</code>, <code>start</code>/<code>end</code> (UTC ISO string), <code>attendees</code>, opsiyonel <code>idempotencyKey</code>, opsiyonel <code>calendarId</code> (birden çok takvim desteği için sonradan eklendi).</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">CalendarBackend</span>
+              <p data-i18n="cal.f.backend.s2">Tüm sözleşme sadece 3 metottan ibaret: <code>list(rangeStart, rangeEnd)</code>, <code>create(event)</code>, <code>cancel(id)</code>. <code>server.ts</code> bunun dışında hiçbir şey talep etmez — bir backend'i diğerine geçirmek bu 3 metodu uygulamaktan ibaret.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">InMemoryCalendarBackend</span>
+              <p data-i18n="cal.f.backend.s3">Basit bir <code>private events: CalendarEvent[]</code> dizisi üzerinde 3 metodu uygular: <code>list</code> tarih aralığına göre filtreler+sıralar; <code>create</code> önce <code>idempotencyKey</code> eşleşmesine bakar, yoksa diziye ekler; <code>cancel</code> id'yi diziden filtreler. Sıfır bağımlılık — süreç her yeniden başladığında (server.ts'teki 2 sabit örnekle) sıfırlanır.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/calendar/google-backend.ts</span>
+            <span class="purpose" data-i18n="cal.f.google.purpose">gerçek entegrasyon, ~245 satır</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <span class="stephead" data-i18n="cal.f.google.s1h">constructor</span>
+              <p data-i18n="cal.f.google.s1">clientId/clientSecret ile bir <code>google.auth.OAuth2</code> istemcisi kurar, üzerine <code>refresh_token</code>'ı yerleştirir, <code>google.calendar({version:'v3', auth})</code> ile sarar.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">list()</span>
+              <p data-i18n="cal.f.google.s2">Hangi takvim ID'lerinin okunacağına <code>resolveReadCalendarIds()</code> ile karar verir, her takvim için <code>Promise.all</code> ile paralel bir <code>events.list</code> çağrısı yapar, sonuçları düzleştirip tarihe göre sıralar.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">create()</span>
+              <p data-i18n="cal.f.google.s3">Önce idempotency kontrolü (<code>findByIdempotencyKey</code>), sonra hedef takvim adı/ID'sini gerçek ID'ye çözer (<code>resolveCalendarId</code>), <code>events.insert</code>'i çağırır — tamamı try/catch içinde: Google API hatası 403 ise izin sorunu olduğunu, 404 ise takvimin bulunamadığını açıkça belirten yeni bir hata fırlatılır.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">cancel()</span>
+              <p data-i18n="cal.f.google.s4">Önce yazma takviminde, sonra sırayla her okuma takviminde silmeyi dener; ilk başarılı silmede durur. 404/410'u "burada yok, sıradakini dene" olarak yutar.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">resolveCalendarId(nameOrId)</span>
+              <p data-i18n="cal.f.google.s5"><code>"primary"</code> doğrudan geçer; aksi halde önbelleğe alınmış takvim listesinde (<code>loadKnownCalendars()</code>) önce tam ID eşleşmesine, sonra büyük/küçük harf duyarsız isim eşleşmesine bakar; hiçbiri tutmazsa ham string'i olduğu gibi kullanır (böylece henüz keşfedilmemiş ama geçerli bir ID yine çalışır; gerçekten geçersizse hatayı Google'ın kendi API'si verir).</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">loadKnownCalendars()</span>
+              <p data-i18n="cal.f.google.s6"><code>calendarList.list()</code>'i sadece bir kere çağırır, sonucu <code>this.knownCalendars</code>'da süreç ömrü boyunca önbelleğe alır.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/calendar/scripts/get-google-refresh-token.ts</span>
+            <span class="purpose" data-i18n="cal.f.script.purpose">tek seferlik, sunucunun parçası değil</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <p data-i18n="cal.f.script.p">Bir OAuth2 istemcisi bir loopback redirect URI'siyle kurulur, bir onay URL'si yazdırılır, redirect'i yakalamak için küçük bir yerel HTTP sunucusu açılır, dönen kod token'lara çevrilir, <code>refresh_token</code> bir ortam değişkeni olarak kaydedilmek üzere ekrana basılır ve süreç sonlanır. Asıl MCP sunucusunun bir parçası olarak <em>hiç</em> çalışmaz — <code>npm run google:auth</code> ile elle, bir kere çalıştırılır.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/calendar/server.ts</span>
+            <span class="purpose" data-i18n="cal.f.server.purpose">araç katmanı, ~380 satır</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <span class="stephead">createBackend()</span>
+              <p data-i18n="cal.f.server.s1"><code>CALENDAR_BACKEND</code> ortam değişkenini okur — <code>"google"</code> değilse iki örnek etkinlikle doldurulmuş taze bir <code>InMemoryCalendarBackend</code> döner; <code>"google"</code> ise 3 zorunlu ortam değişkeninin varlığını doğrular (eksikse tam olarak neyin eksik olduğunu söyleyen bir hata fırlatır), sonra <code>google-backend.js</code>'i dinamik <code>import()</code> ile yükleyip ortam değişkenlerinden <code>writeCalendarId</code>/<code>readCalendarIds</code> ile oluşturur.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">list_events / find_free_slots / check_conflicts</span>
+              <p data-i18n="cal.f.server.s2"><code>backend.list()</code> üzerine kurulu üç salt-okunur araç. <code>find_free_slots</code>, sıralı meşgul listesini hareketli bir <code>cursor</code> ile tarar; bir sonraki etkinlikten (ya da pencere sonundan) önceki boşluk istenen süreden büyük ya da eşitse bir boş aralık üretir.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">schedule_interview</span>
+              <p data-i18n="cal.f.server.s3">En karmaşık handler: aralığı doğrula → çakışan etkinlikleri getir → <code>idempotencyKey</code> için kendi-eşleşmesine bak (yeniden deneme durumu, hemen <code>already_scheduled</code> döner) → düzeltilmiş mantıkla gerçek <code>conflicts</code>'ı hesapla → <code>force</code> yoksa reddet → aksi halde <code>backend.create()</code>'ı try/catch içinde çağır.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">cancel_event</span>
+              <p data-i18n="cal.f.server.s4"><code>backend.cancel()</code> etrafında basit bir try/catch.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">main()</span>
+              <p data-i18n="cal.f.server.s5">Backend burada oluşturulur (modül yüklenirken değil) — özellikle bozuk bir Google yapılandırmasının, diğer her başlangıç hatasıyla aynı <code>main().catch()</code> yolundan geçmesi için.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">04</span> <span data-i18n="cal.bug.h">Gerçek bir hata: çakışma kapısı sessizce atlanıyordu</span></h2>
         <div class="callout warn">
           <h4 data-i18n="cal.bug.badge">Bulunan Bug</h4>
           <p data-i18n="cal.bug.p1">İlk sürümde çakışma filtresi şöyleydi:</p>
@@ -726,7 +911,7 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
       </section>
 
       <section class="block">
-        <h2><span class="num">04</span> <span data-i18n="cal.multi.h">Birden fazla takvim &amp; ortam değişkenleri</span></h2>
+        <h2><span class="num">05</span> <span data-i18n="cal.multi.h">Birden fazla takvim &amp; ortam değişkenleri</span></h2>
         <div class="tablewrap">
           <table>
             <thead><tr><th data-i18n="common.var">Değişken</th><th data-i18n="common.required">Zorunlu</th><th data-i18n="common.desc">Açıklama</th></tr></thead>
@@ -786,7 +971,35 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
       </section>
 
       <section class="block">
-        <h2><span class="num">03</span> <span data-i18n="books.story.h">Kapsam düzeltmesi hikâyesi</span></h2>
+        <h2><span class="num">03</span> <span data-i18n="common.files">Dosya dosya</span></h2>
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/books/server.ts</span>
+            <span class="purpose" data-i18n="books.f.purpose">tek dosya — sunucunun tamamı</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <span class="stephead">RESULT_FIELDS</span>
+              <p data-i18n="books.f.s1">OpenLibrary alan adlarından oluşan sabit bir virgüllü liste; API'nin kendi <code>fields=</code> sorgu parametresi olarak geçirilir — böylece üst API'nin <em>kendi yanıtı</em> zaten küçük gelir, sunucu tarafında filtreleme gerekmez.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">searchOpenLibrary()</span>
+              <p data-i18n="books.f.s2">Verilen <code>q</code>/<code>title</code>/<code>author</code>/<code>subject</code>'ten hangileri doluysa onlarla, artı <code>limit</code>/<code>page</code>/<code>fields</code> ile URL'yi kurar; isteği bir <code>AbortController</code> zaman aşımıyla (8 saniye) ateşler; 2xx olmayan yanıtlarda hata fırlatır.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">search_books <span style="color:var(--text-faint)">(tool)</span></span>
+              <p data-i18n="books.f.s3">En az bir arama alanının verildiğini doğrular, <code>searchOpenLibrary()</code>'yi çağırır, her sonucu yeniden şekillendirir (uzun/alakasız alanları atar, <code>cover_i</code>'den bir <code>coverUrl</code> hesaplar), <code>numFound</code>/<code>page</code>/<code>limit</code>/<code>totalPages</code>/<code>results</code> döner.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">main()</span>
+              <p data-i18n="books.f.s4">Diğer tüm sunucularla aynı başlatma deseni: stdio bağlan, stderr'e logla, hataları <code>.catch()</code> ile yakala.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">04</span> <span data-i18n="books.story.h">Kapsam düzeltmesi hikâyesi</span></h2>
         <div class="callout">
           <h4 data-i18n="books.story.badge">Not</h4>
           <p data-i18n="books.story.p">İlk istek "kitap, hava durumu, ülke/şehir arayan bir 'search' sunucusu" içindi. OpenLibrary yalnızca kitap/eser/yazar indeksler — hava durumu ya da coğrafya verisi yok. Doğru kapsamla <code>books</code> sunucusu inşa edildi (adı önce <code>search</code> → <code>search-books</code> → sade <code>books</code> olarak sadeleşti); hava durumu için ayrı, doğru API'ye (Open-Meteo) dayanan bir <code>weather</code> sunucusu eklendi.</p>
@@ -794,7 +1007,7 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
       </section>
 
       <section class="block">
-        <h2><span class="num">04</span> <span data-i18n="common.designnotes">Tasarım notları</span></h2>
+        <h2><span class="num">05</span> <span data-i18n="common.designnotes">Tasarım notları</span></h2>
         <div class="prose">
           <p data-i18n="books.n1"><strong>Zaman aşımı:</strong> her dış HTTP çağrısı <code>AbortController</code> ile 8 saniyede kesilir — takılı kalan bir üst servis, aracı süresiz bekletemez.</p>
           <p data-i18n="books.n2"><strong>Sayfalama passthrough:</strong> <code>limit</code>/<code>page</code> doğrudan OpenLibrary'nin kendi parametreleridir — davranış (ve <code>numFound</code>) üst API ile birebir eşleşir, ekstra çeviri mantığı yok.</p>
@@ -847,7 +1060,43 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
       </section>
 
       <section class="block">
-        <h2><span class="num">03</span> <span data-i18n="common.designnotes">Tasarım notları</span></h2>
+        <h2><span class="num">03</span> <span data-i18n="common.files">Dosya dosya</span></h2>
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/weather/server.ts</span>
+            <span class="purpose" data-i18n="wx.f.purpose">tek dosya — sunucunun tamamı</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <span class="stephead">WMO_CODES</span>
+              <p data-i18n="wx.f.s1">~28 WMO hava kodunu kısa İngilizce ifadelere çeviren bir <code>Record&lt;number,string&gt;</code>. <code>describeWeatherCode()</code>, tabloda olmayan her kod için <code>"Unknown (WMO code N)"</code> döner.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">geocode()</span>
+              <p data-i18n="wx.f.s2">Open-Meteo'nun geocoding uç noktasını çağırır, küçültülmüş bir aday dizisi döner (ad, ülke, admin1, lat/lon, saat dilimi, nüfus). İki araç tarafından paylaşılır.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">forecast()</span>
+              <p data-i18n="wx.f.s3">Verilen lat/lon + gün sayısı için tahmin uç noktasını çağırır, kodları metne çevrilmiş <code>current</code> + <code>daily[]</code> döner. İki araç tarafından paylaşılır.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">get_weather_by_location</span>
+              <p data-i18n="wx.f.s4"><code>geocode()</code>'u count=5 ile çağırır, ilk (en iyi sıralanmış) sonucu alır, üzerinde <code>forecast()</code>'u çalıştırır, <code>resolvedLocation</code> + <code>alternativeMatches</code> (<code>candidates.length - 1</code>) + hava durumunu döner.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">geocode_location / get_weather</span>
+              <p data-i18n="wx.f.s5">İki yardımcı fonksiyonu doğrudan dışa açan ince sarmalayıcılar — elle belirsizlik giderme için.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">weather_briefing <span style="color:var(--text-faint)">(prompt)</span></span>
+              <p data-i18n="wx.f.s6">Agent'a önce kolaylık aracını denemesini, <code>alternativeMatches &gt; 0</code> ve çözülen konum yanlış görünüyorsa iki-adımlı akışa düşmesini söyler.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">04</span> <span data-i18n="common.designnotes">Tasarım notları</span></h2>
         <div class="prose">
           <p data-i18n="wx.n1"><strong>Şeffaf belirsizlik:</strong> "Munich" tek başına Almanya'daki şehri doğru bulur (Open-Meteo yaklaşık nüfusa göre sıralar) ama <code>alternativeMatches: 4</code> döner — model ya da kullanıcı bunun bir tahmin olduğunu bilir. "Munich, Germany" gibi niteleyici eklemek genelde iki-adımlı akışa hiç gerek bırakmaz.</p>
           <p data-i18n="wx.n2"><strong>Kod çevirisi:</strong> WMO hava kodları (0, 1, 2, 3, 61, 95 ...) bir <code>Record&lt;number,string&gt;</code> tablosuyla "Clear sky", "Overcast", "Thunderstorm" gibi metne çevrilir — model kod tablosunu ezbere bilmek zorunda kalmaz.</p>
@@ -922,7 +1171,56 @@ package.json     <span class="c">// paylaşılan bağımlılıklar + sunucu baş
       </section>
 
       <section class="block">
-        <h2><span class="num">04</span> <span data-i18n="wa.bugs.h">İnşa sırasında yakalanan iki gerçek hata</span></h2>
+        <h2><span class="num">04</span> <span data-i18n="common.files">Dosya dosya</span></h2>
+
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/whatsapp/server.ts</span>
+            <span class="purpose" data-i18n="wa.f.server.purpose">asıl sunucu, başsız çalışır</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <span class="stephead" data-i18n="wa.f.server.s1h">Import'lar</span>
+              <p data-i18n="wa.f.server.s1">CJS/ESM uyum düzeltmesi burada yaşıyor (aşağıdaki "Bulunan hatalar"a bakın): <code>Client</code>/<code>LocalAuth</code> önce varsayılan export olarak alınır, sonra destructure edilir — doğrudan named import çalışma zamanında patlıyordu.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">AUTH_DIR</span>
+              <p data-i18n="wa.f.server.s2"><code>WHATSAPP_AUTH_DIR</code> ortam değişkeninden ya da kullanıcının ev dizini altındaki bir varsayılandan bir kere çözülür — bilerek repo'nun <em>dışında</em>: oturum kimlik bilgileri asla yanlışlıkla commit'lenemesin diye.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">connectionState, requireReady()</span>
+              <p data-i18n="wa.f.server.s3">Modül seviyesinde <code>connectionState</code> ("connecting"/"ready"/"disconnected") ve <code>ownNumber</code>, <code>main()</code>'da kayıtlı olay dinleyicileri tarafından güncellenir. <code>requireReady()</code>, canlı bir oturuma ihtiyaç duyan her handler'ın başında çağrılan küçük bir bekçi — devam etmek güvenliyse <code>undefined</code>, değilse açıklayıcı bir metin döner.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">summarizeChat() / summarizeMessage()</span>
+              <p data-i18n="wa.f.server.s4">whatsapp-web.js'in native <code>Chat</code>/<code>Message</code> nesnelerini bir çağıranın ihtiyaç duyduğu birkaç alana indirger.</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">4 araç</span>
+              <p data-i18n="wa.f.server.s5"><code>whatsapp_status</code> (basit); <code>list_chats</code> (<code>client.getChats()</code>'i çağırır, filtreler/sıralar/sınırlar); <code>get_messages</code> (<code>client.getChatById()</code> sonra <code>chat.fetchMessages({limit})</code>); <code>send_message</code> (zaten bir chatId'ye benzemiyorsa, çıplak bir telefon numarasını önce <code>client.getNumberId()</code> ile gerçek bir chatId'ye çözer).</p>
+            </div>
+            <div class="filestep">
+              <span class="stephead">main()</span>
+              <p data-i18n="wa.f.server.s6"><code>client.initialize()</code>'ı çağırmadan önce <code>qr</code>/<code>ready</code>/<code>disconnected</code>/<code>auth_failure</code> dinleyicilerini kaydeder. <code>qr</code> handler'ı asıl güvenlik kapısı: eşleştirme hiç yapılmadıysa, stderr'e eyleme geçirilebilir bir mesaj loglar ve hemen çıkar — QR kodu stdio üzerinden (JSON-RPC'ye ayrılmış kanaldan) göstermeye çalışmak yerine.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="filecard">
+          <div class="filecard-head">
+            <span class="path">src/whatsapp/scripts/pair.ts</span>
+            <span class="purpose" data-i18n="wa.f.pair.purpose">tek seferlik, sunucunun parçası değil</span>
+          </div>
+          <div class="filecard-body">
+            <div class="filestep">
+              <p data-i18n="wa.f.pair.p">Aynı <code>LocalAuth</code> ile kendi <code>Client</code>'ını oluşturur, kodu terminale <code>qrcode-terminal</code> ile çizen bir <code>qr</code> dinleyicisi, eşleşen numarayı yazdırıp 0 ile çıkan bir <code>ready</code> dinleyicisi, 1 ile çıkan bir <code>auth_failure</code> dinleyicisi kaydeder. <code>npm run whatsapp:pair</code> ile bir kere çalıştırılır; tek işi, <code>server.ts</code>'in daha sonra başsız olarak yükleyeceği oturum dosyalarını üretmektir.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="num">05</span> <span data-i18n="wa.bugs.h">İnşa sırasında yakalanan iki gerçek hata</span></h2>
         <div class="callout warn">
           <h4>#1 — <span data-i18n="wa.bugs.b1h">Git bağımlılığı engellendi</span></h4>
           <p data-i18n="wa.bugs.b1p">İlk seçim olan Baileys kütüphanesi, çalışma zamanında gerçekten gereken bir şifreleme paketini (<code>libsignal</code>) GitHub'dan git protokolüyle çekmeye çalışıyordu; bu ortamda git-tabanlı paket indirmeleri güvenlik amacıyla kapalıydı. Çözüm: sadece npm registry'sinden kuran <code>whatsapp-web.js</code>'e geçildi.</p>
@@ -949,6 +1247,67 @@ const { Client, LocalAuth } = whatsappWebPkg;</pre>
 
 <script>
 window.__MCP_I18N__ = {
+"common.files": {tr:"Dosya dosya", en:"File by file"},
+
+"infra.f.purpose": {tr:"tek dosya — sunucunun tamamı, ~190 satır", en:"one file — the whole server, ~190 lines"},
+"infra.f.s1h": {tr:"Kurulum", en:"Setup"},
+"infra.f.s1p": {tr:"SDK'dan <code>McpServer</code> ve <code>StdioServerTransport</code>, doğrulama için <code>zod</code>, Node'un yerleşik <code>net</code> ve <code>os</code> modülleri import edilir. Tek bir <code>McpServer</code> örneği <code>infra-mcp-server</code> adıyla oluşturulur.", en:"Imports <code>McpServer</code> and <code>StdioServerTransport</code> from the SDK, <code>zod</code> for validation, and Node's built-in <code>net</code> and <code>os</code> modules. Creates one <code>McpServer</code> instance named <code>infra-mcp-server</code>."},
+"infra.f.s2p": {tr:"En basit araç: <code>message:string</code> girdisini zod ile doğrular, başına <code>echo: </code> ekleyip aynen geri döner. Amacı, herhangi bir gerçek işlem yapmadan bağlantının uçtan uca çalıştığını doğrulamak.", en:"The simplest tool: validates a <code>message:string</code> input with zod, prepends <code>echo: </code>, and returns it verbatim. Its only job is confirming the wiring works end to end, without doing anything real."},
+"infra.f.s3p": {tr:"Araç <code>host</code>, <code>port</code> (1–65535) ve <code>timeoutMs</code> (varsayılan 2000, üst sınır 10000) alır, <code>isPortOpen()</code>'ı çağırıp \"OPEN\"/\"CLOSED\" metnini döner. Asıl mantık <code>isPortOpen()</code> içinde: bir <code>net.Socket</code> açılır, <code>connect</code>/<code>timeout</code>/<code>error</code> olaylarından hangisi <em>önce</em> tetiklenirse Promise onunla çözülür; hangisi olursa olsun ortak <code>done()</code> callback'i soketi her zaman <code>destroy()</code> eder — soket asla sızdırılmaz.", en:"The tool takes <code>host</code>, <code>port</code> (1–65535), and <code>timeoutMs</code> (default 2000, capped at 10000), calls <code>isPortOpen()</code>, and returns \"OPEN\"/\"CLOSED\" text. The real logic lives in <code>isPortOpen()</code>: it opens a <code>net.Socket</code>, and whichever of <code>connect</code>/<code>timeout</code>/<code>error</code> fires <em>first</em> resolves the Promise — the shared <code>done()</code> callback always <code>destroy()</code>s the socket regardless of outcome, so nothing leaks."},
+"infra.f.s4p": {tr:"<code>registerTool</code> değil <code>registerResource</code> ile kaydedilir — çağrılabilir bir eylem değil, salt-okunur bağlam. Handler, <code>collectSystemInfo()</code>'yu çağırır (hostname, platform, CPU sayısı, bellek, uptime, load average — hepsi Node'un <code>os</code> modülünden) ve JSON metin olarak döner.", en:"Registered via <code>registerResource</code>, not <code>registerTool</code> — it's read-only context, not a callable action. The handler calls <code>collectSystemInfo()</code> (hostname, platform, CPU count, memory, uptime, load average — all from Node's <code>os</code> module) and returns it as JSON text."},
+"infra.f.s5p": {tr:"<code>service</code> ve <code>symptom</code> string'lerini alır, modele sıralı bir triyaj planı ürettiren tek bir hazır \"user\" mesajı döner. Kendisi hiçbir aracı çağırmaz — insan ya da agent'ın tutarlı bir yapı elde etmek için çağırdığı bir şablondur.", en:"Takes <code>service</code> and <code>symptom</code> strings and returns a single canned \"user\" message that instructs the model to produce a ranked triage plan. It doesn't call any tool itself — it's a template the human or agent invokes to get a consistent structure."},
+"infra.f.s6p": {tr:"Bir <code>StdioServerTransport</code> bağlanır, sonra <code>console.error</code> ile (stderr'e) çalıştığı loglanır. Tamamı <code>.catch()</code> ile sarılıdır — başlangıçta bir hata olursa süreç net bir mesajla ve çıkış kodu 1 ile sonlanır.", en:"Connects a <code>StdioServerTransport</code>, then logs to stderr via <code>console.error</code> that it's running. Wrapped in <code>.catch()</code> — a startup failure exits with a clear message and code 1."},
+
+"cal.f.backend.purpose": {tr:"sözleşme + varsayılan backend, ~75 satır", en:"the contract + default backend, ~75 lines"},
+"cal.f.backend.s1": {tr:"Alanlar: <code>id</code>, <code>title</code>, <code>start</code>/<code>end</code> (UTC ISO string), <code>attendees</code>, opsiyonel <code>idempotencyKey</code>, opsiyonel <code>calendarId</code> (birden çok takvim desteği için sonradan eklendi).", en:"Fields: <code>id</code>, <code>title</code>, <code>start</code>/<code>end</code> (UTC ISO strings), <code>attendees</code>, an optional <code>idempotencyKey</code>, and an optional <code>calendarId</code> (added later for multi-calendar support)."},
+"cal.f.backend.s2": {tr:"Tüm sözleşme sadece 3 metottan ibaret: <code>list(rangeStart, rangeEnd)</code>, <code>create(event)</code>, <code>cancel(id)</code>. <code>server.ts</code> bunun dışında hiçbir şey talep etmez — bir backend'i diğerine geçirmek bu 3 metodu uygulamaktan ibaret.", en:"The entire contract is just 3 methods: <code>list(rangeStart, rangeEnd)</code>, <code>create(event)</code>, <code>cancel(id)</code>. <code>server.ts</code> never asks for anything more — swapping one backend for another just means implementing these 3 methods."},
+"cal.f.backend.s3": {tr:"Basit bir <code>private events: CalendarEvent[]</code> dizisi üzerinde 3 metodu uygular: <code>list</code> tarih aralığına göre filtreler+sıralar; <code>create</code> önce <code>idempotencyKey</code> eşleşmesine bakar, yoksa diziye ekler; <code>cancel</code> id'yi diziden filtreler. Sıfır bağımlılık — süreç her yeniden başladığında (server.ts'teki 2 sabit örnekle) sıfırlanır.", en:"Implements the 3 methods against a plain <code>private events: CalendarEvent[]</code> array: <code>list</code> filters+sorts by date overlap; <code>create</code> checks for an <code>idempotencyKey</code> match first, otherwise pushes; <code>cancel</code> filters the id out. Zero dependencies — resets every process restart (re-seeded from the 2 hardcoded events in server.ts)."},
+
+"cal.f.google.purpose": {tr:"gerçek entegrasyon, ~245 satır", en:"the real integration, ~245 lines"},
+"cal.f.google.s1h": {tr:"constructor", en:"constructor"},
+"cal.f.google.s1": {tr:"clientId/clientSecret ile bir <code>google.auth.OAuth2</code> istemcisi kurar, üzerine <code>refresh_token</code>'ı yerleştirir, <code>google.calendar({version:'v3', auth})</code> ile sarar.", en:"Builds a <code>google.auth.OAuth2</code> client from the clientId/clientSecret, sets its <code>refresh_token</code>, and wraps it with <code>google.calendar({version:'v3', auth})</code>."},
+"cal.f.google.s2": {tr:"Hangi takvim ID'lerinin okunacağına <code>resolveReadCalendarIds()</code> ile karar verir, her takvim için <code>Promise.all</code> ile paralel bir <code>events.list</code> çağrısı yapar, sonuçları düzleştirip tarihe göre sıralar.", en:"Decides which calendar IDs to read via <code>resolveReadCalendarIds()</code>, fires one <code>events.list</code> call per calendar in parallel via <code>Promise.all</code>, then flattens and sorts the results."},
+"cal.f.google.s3": {tr:"Önce idempotency kontrolü (<code>findByIdempotencyKey</code>), sonra hedef takvim adı/ID'sini gerçek ID'ye çözer (<code>resolveCalendarId</code>), <code>events.insert</code>'i çağırır — tamamı try/catch içinde: Google API hatası 403 ise izin sorunu olduğunu, 404 ise takvimin bulunamadığını açıkça belirten yeni bir hata fırlatılır.", en:"Checks idempotency first (<code>findByIdempotencyKey</code>), resolves the target calendar name/ID to a real ID (<code>resolveCalendarId</code>), then calls <code>events.insert</code> — all inside a try/catch: a Google API 403 gets rethrown as a clear permission-problem message, a 404 as \"no such calendar.\""},
+"cal.f.google.s4": {tr:"Önce yazma takviminde, sonra sırayla her okuma takviminde silmeyi dener; ilk başarılı silmede durur. 404/410'u \"burada yok, sıradakini dene\" olarak yutar.", en:"Tries deleting from the write calendar first, then each read calendar in turn, stopping at the first success. Swallows 404/410 as \"not here, try the next one.\""},
+"cal.f.google.s5": {tr:"<code>\"primary\"</code> doğrudan geçer; aksi halde önbelleğe alınmış takvim listesinde (<code>loadKnownCalendars()</code>) önce tam ID eşleşmesine, sonra büyük/küçük harf duyarsız isim eşleşmesine bakar; hiçbiri tutmazsa ham string'i olduğu gibi kullanır (böylece henüz keşfedilmemiş ama geçerli bir ID yine çalışır; gerçekten geçersizse hatayı Google'ın kendi API'si verir).", en:"<code>\"primary\"</code> passes straight through; otherwise it checks the cached calendar list (<code>loadKnownCalendars()</code>) for an exact ID match, then a case-insensitive name match; if neither hits, it falls through to using the raw string as-is (so a valid-but-undiscovered ID still works, and Google's own API surfaces the real error if it's genuinely invalid)."},
+"cal.f.google.s6": {tr:"<code>calendarList.list()</code>'i sadece bir kere çağırır, sonucu <code>this.knownCalendars</code>'da süreç ömrü boyunca önbelleğe alır.", en:"Calls <code>calendarList.list()</code> exactly once, caching the result in <code>this.knownCalendars</code> for the life of the process."},
+
+"cal.f.script.purpose": {tr:"tek seferlik, sunucunun parçası değil", en:"one-time, not part of the server"},
+"cal.f.script.p": {tr:"Bir OAuth2 istemcisi bir loopback redirect URI'siyle kurulur, bir onay URL'si yazdırılır, redirect'i yakalamak için küçük bir yerel HTTP sunucusu açılır, dönen kod token'lara çevrilir, <code>refresh_token</code> bir ortam değişkeni olarak kaydedilmek üzere ekrana basılır ve süreç sonlanır. Asıl MCP sunucusunun bir parçası olarak <em>hiç</em> çalışmaz — <code>npm run google:auth</code> ile elle, bir kere çalıştırılır.", en:"An OAuth2 client is built with a loopback redirect URI, a consent URL is printed, a tiny local HTTP server catches the redirect, the returned code is exchanged for tokens, and the <code>refresh_token</code> is printed to save as an env var before the process exits. It never runs as part of the real MCP server — it's run manually, once, via <code>npm run google:auth</code>."},
+
+"cal.f.server.purpose": {tr:"araç katmanı, ~380 satır", en:"the tool layer, ~380 lines"},
+"cal.f.server.s1": {tr:"<code>CALENDAR_BACKEND</code> ortam değişkenini okur — <code>\"google\"</code> değilse iki örnek etkinlikle doldurulmuş taze bir <code>InMemoryCalendarBackend</code> döner; <code>\"google\"</code> ise 3 zorunlu ortam değişkeninin varlığını doğrular (eksikse tam olarak neyin eksik olduğunu söyleyen bir hata fırlatır), sonra <code>google-backend.js</code>'i dinamik <code>import()</code> ile yükleyip ortam değişkenlerinden <code>writeCalendarId</code>/<code>readCalendarIds</code> ile oluşturur.", en:"Reads the <code>CALENDAR_BACKEND</code> env var — anything other than <code>\"google\"</code> returns a fresh <code>InMemoryCalendarBackend</code> seeded with two example events; <code>\"google\"</code> validates that 3 required env vars are present (throwing a clear error naming exactly what's missing), then dynamically <code>import()</code>s <code>google-backend.js</code> and constructs it with <code>writeCalendarId</code>/<code>readCalendarIds</code> from env vars."},
+"cal.f.server.s2": {tr:"<code>backend.list()</code> üzerine kurulu üç salt-okunur araç. <code>find_free_slots</code>, sıralı meşgul listesini hareketli bir <code>cursor</code> ile tarar; bir sonraki etkinlikten (ya da pencere sonundan) önceki boşluk istenen süreden büyük ya da eşitse bir boş aralık üretir.", en:"Three read-only tools built on <code>backend.list()</code>. <code>find_free_slots</code> walks the sorted busy list with a moving <code>cursor</code>, emitting a free slot whenever the gap before the next event (or the window end) is ≥ the requested duration."},
+"cal.f.server.s3": {tr:"En karmaşık handler: aralığı doğrula → çakışan etkinlikleri getir → <code>idempotencyKey</code> için kendi-eşleşmesine bak (yeniden deneme durumu, hemen <code>already_scheduled</code> döner) → düzeltilmiş mantıkla gerçek <code>conflicts</code>'ı hesapla → <code>force</code> yoksa reddet → aksi halde <code>backend.create()</code>'ı try/catch içinde çağır.", en:"The most complex handler: validate the range → fetch overlapping events → check <code>idempotencyKey</code> for a self-match (retry case, returns <code>already_scheduled</code> immediately) → compute real <code>conflicts</code> with the fixed logic → refuse unless <code>force</code> → otherwise call <code>backend.create()</code> inside a try/catch."},
+"cal.f.server.s4": {tr:"<code>backend.cancel()</code> etrafında basit bir try/catch.", en:"A simple try/catch around <code>backend.cancel()</code>."},
+"cal.f.server.s5": {tr:"Backend burada oluşturulur (modül yüklenirken değil) — özellikle bozuk bir Google yapılandırmasının, diğer her başlangıç hatasıyla aynı <code>main().catch()</code> yolundan geçmesi için.", en:"The backend is created here (not at module load) specifically so a broken Google config fails through the same <code>main().catch()</code> path as every other startup error."},
+
+"books.f.purpose": {tr:"tek dosya — sunucunun tamamı", en:"one file — the whole server"},
+"books.f.s1": {tr:"OpenLibrary alan adlarından oluşan sabit bir virgüllü liste; API'nin kendi <code>fields=</code> sorgu parametresi olarak geçirilir — böylece üst API'nin <em>kendi yanıtı</em> zaten küçük gelir, sunucu tarafında filtreleme gerekmez.", en:"A hardcoded comma list of OpenLibrary field names, passed as the API's own <code>fields=</code> query param — so the upstream <em>response itself</em> comes back small, no server-side filtering needed."},
+"books.f.s2": {tr:"Verilen <code>q</code>/<code>title</code>/<code>author</code>/<code>subject</code>'ten hangileri doluysa onlarla, artı <code>limit</code>/<code>page</code>/<code>fields</code> ile URL'yi kurar; isteği bir <code>AbortController</code> zaman aşımıyla (8 saniye) ateşler; 2xx olmayan yanıtlarda hata fırlatır.", en:"Builds the URL from whichever of <code>q</code>/<code>title</code>/<code>author</code>/<code>subject</code> were given, plus <code>limit</code>/<code>page</code>/<code>fields</code>; fires the request through an 8-second <code>AbortController</code> timeout; throws on a non-2xx response."},
+"books.f.s3": {tr:"En az bir arama alanının verildiğini doğrular, <code>searchOpenLibrary()</code>'yi çağırır, her sonucu yeniden şekillendirir (uzun/alakasız alanları atar, <code>cover_i</code>'den bir <code>coverUrl</code> hesaplar), <code>numFound</code>/<code>page</code>/<code>limit</code>/<code>totalPages</code>/<code>results</code> döner.", en:"Validates at least one search field was given, calls <code>searchOpenLibrary()</code>, reshapes each result (drops long/irrelevant fields, computes a <code>coverUrl</code> from <code>cover_i</code>), and returns <code>numFound</code>/<code>page</code>/<code>limit</code>/<code>totalPages</code>/<code>results</code>."},
+"books.f.s4": {tr:"Diğer tüm sunucularla aynı başlatma deseni: stdio bağlan, stderr'e logla, hataları <code>.catch()</code> ile yakala.", en:"Same bootstrap pattern as every other server: connect stdio, log to stderr, catch startup errors with <code>.catch()</code>."},
+
+"wx.f.purpose": {tr:"tek dosya — sunucunun tamamı", en:"one file — the whole server"},
+"wx.f.s1": {tr:"~28 WMO hava kodunu kısa İngilizce ifadelere çeviren bir <code>Record&lt;number,string&gt;</code>. <code>describeWeatherCode()</code>, tabloda olmayan her kod için <code>\"Unknown (WMO code N)\"</code> döner.", en:"A <code>Record&lt;number,string&gt;</code> translating ~28 WMO weather codes to short phrases. <code>describeWeatherCode()</code> falls back to <code>\"Unknown (WMO code N)\"</code> for anything not in the table."},
+"wx.f.s2": {tr:"Open-Meteo'nun geocoding uç noktasını çağırır, küçültülmüş bir aday dizisi döner (ad, ülke, admin1, lat/lon, saat dilimi, nüfus). İki araç tarafından paylaşılır.", en:"Calls Open-Meteo's geocoding endpoint, returns a trimmed array of candidates (name, country, admin1, lat/lon, timezone, population). Shared by two tools."},
+"wx.f.s3": {tr:"Verilen lat/lon + gün sayısı için tahmin uç noktasını çağırır, kodları metne çevrilmiş <code>current</code> + <code>daily[]</code> döner. İki araç tarafından paylaşılır.", en:"Calls the forecast endpoint for a given lat/lon + day count, returns <code>current</code> + <code>daily[]</code> with codes translated to text. Shared by two tools."},
+"wx.f.s4": {tr:"<code>geocode()</code>'u count=5 ile çağırır, ilk (en iyi sıralanmış) sonucu alır, üzerinde <code>forecast()</code>'u çalıştırır, <code>resolvedLocation</code> + <code>alternativeMatches</code> (<code>candidates.length - 1</code>) + hava durumunu döner.", en:"Calls <code>geocode()</code> with count=5, takes the first (best-ranked) result, runs <code>forecast()</code> on it, and returns <code>resolvedLocation</code> + <code>alternativeMatches</code> (<code>candidates.length - 1</code>) + the weather."},
+"wx.f.s5": {tr:"İki yardımcı fonksiyonu doğrudan dışa açan ince sarmalayıcılar — elle belirsizlik giderme için.", en:"Thin wrappers directly exposing the two helper functions — for manual disambiguation."},
+"wx.f.s6": {tr:"Agent'a önce kolaylık aracını denemesini, <code>alternativeMatches &gt; 0</code> ve çözülen konum yanlış görünüyorsa iki-adımlı akışa düşmesini söyler.", en:"Tells the agent to try the convenience tool first, and fall back to the two-step flow if <code>alternativeMatches &gt; 0</code> and the resolved location looks wrong."},
+
+"wa.f.server.purpose": {tr:"asıl sunucu, başsız çalışır", en:"the real server, runs headless"},
+"wa.f.server.s1h": {tr:"Import'lar", en:"Imports"},
+"wa.f.server.s1": {tr:"CJS/ESM uyum düzeltmesi burada yaşıyor (aşağıdaki \"Bulunan hatalar\"a bakın): <code>Client</code>/<code>LocalAuth</code> önce varsayılan export olarak alınır, sonra destructure edilir — doğrudan named import çalışma zamanında patlıyordu.", en:"The CJS/ESM interop fix lives here (see \"Bugs caught\" below): <code>Client</code>/<code>LocalAuth</code> come in via the default export first, then get destructured — a direct named import crashed at runtime."},
+"wa.f.server.s2": {tr:"<code>WHATSAPP_AUTH_DIR</code> ortam değişkeninden ya da kullanıcının ev dizini altındaki bir varsayılandan bir kere çözülür — bilerek repo'nun <em>dışında</em>: oturum kimlik bilgileri asla yanlışlıkla commit'lenemesin diye.", en:"Resolved once from the <code>WHATSAPP_AUTH_DIR</code> env var or a default under the user's home directory — deliberately <em>outside</em> the repo, so session credentials can never be accidentally committed."},
+"wa.f.server.s3": {tr:"Modül seviyesinde <code>connectionState</code> (\"connecting\"/\"ready\"/\"disconnected\") ve <code>ownNumber</code>, <code>main()</code>'da kayıtlı olay dinleyicileri tarafından güncellenir. <code>requireReady()</code>, canlı bir oturuma ihtiyaç duyan her handler'ın başında çağrılan küçük bir bekçi — devam etmek güvenliyse <code>undefined</code>, değilse açıklayıcı bir metin döner.", en:"Module-level <code>connectionState</code> (\"connecting\"/\"ready\"/\"disconnected\") and <code>ownNumber</code>, updated by event listeners registered in <code>main()</code>. <code>requireReady()</code> is a small guard called at the top of every handler that needs a live session — returns <code>undefined</code> when it's safe to proceed, or an explanatory string when it isn't."},
+"wa.f.server.s4": {tr:"whatsapp-web.js'in native <code>Chat</code>/<code>Message</code> nesnelerini bir çağıranın ihtiyaç duyduğu birkaç alana indirger.", en:"Reshape whatsapp-web.js's native <code>Chat</code>/<code>Message</code> objects down to the handful of fields a caller needs."},
+"wa.f.server.s5": {tr:"<code>whatsapp_status</code> (basit); <code>list_chats</code> (<code>client.getChats()</code>'i çağırır, filtreler/sıralar/sınırlar); <code>get_messages</code> (<code>client.getChatById()</code> sonra <code>chat.fetchMessages({limit})</code>); <code>send_message</code> (zaten bir chatId'ye benzemiyorsa, çıplak bir telefon numarasını önce <code>client.getNumberId()</code> ile gerçek bir chatId'ye çözer).", en:"<code>whatsapp_status</code> (trivial); <code>list_chats</code> (calls <code>client.getChats()</code>, filters/sorts/limits); <code>get_messages</code> (<code>client.getChatById()</code> then <code>chat.fetchMessages({limit})</code>); <code>send_message</code> (resolves a bare phone number to a real chatId via <code>client.getNumberId()</code> first, unless it already looks like one)."},
+"wa.f.server.s6": {tr:"<code>client.initialize()</code>'ı çağırmadan önce <code>qr</code>/<code>ready</code>/<code>disconnected</code>/<code>auth_failure</code> dinleyicilerini kaydeder. <code>qr</code> handler'ı asıl güvenlik kapısı: eşleştirme hiç yapılmadıysa, stderr'e eyleme geçirilebilir bir mesaj loglar ve hemen çıkar — QR kodu stdio üzerinden (JSON-RPC'ye ayrılmış kanaldan) göstermeye çalışmak yerine.", en:"Registers <code>qr</code>/<code>ready</code>/<code>disconnected</code>/<code>auth_failure</code> listeners before calling <code>client.initialize()</code>. The <code>qr</code> handler is the real safety gate: if pairing was never done, it logs an actionable message to stderr and exits immediately, instead of trying to render a QR code over stdio — the channel reserved for JSON-RPC."},
+
+"wa.f.pair.purpose": {tr:"tek seferlik, sunucunun parçası değil", en:"one-time, not part of the server"},
+"wa.f.pair.p": {tr:"Aynı <code>LocalAuth</code> ile kendi <code>Client</code>'ını oluşturur, kodu terminale <code>qrcode-terminal</code> ile çizen bir <code>qr</code> dinleyicisi, eşleşen numarayı yazdırıp 0 ile çıkan bir <code>ready</code> dinleyicisi, 1 ile çıkan bir <code>auth_failure</code> dinleyicisi kaydeder. <code>npm run whatsapp:pair</code> ile bir kere çalıştırılır; tek işi, <code>server.ts</code>'in daha sonra başsız olarak yükleyeceği oturum dosyalarını üretmektir.", en:"Creates its own <code>Client</code> with the same <code>LocalAuth</code>, registers a <code>qr</code> listener that renders the code to the terminal via <code>qrcode-terminal</code>, a <code>ready</code> listener that prints the paired number and exits 0, and an <code>auth_failure</code> listener that exits 1. Run once via <code>npm run whatsapp:pair</code> — its only job is producing the session files <code>server.ts</code> later loads headlessly."},
+
 "badge.demonstrates": {tr:"3 ilkeli de gösterir", en:"Demonstrates all 3 primitives"},
 "badge.keyless": {tr:"API anahtarı gerekmez", en:"No API key required"},
 "badge.mutating": {tr:"Mutating (yazan) araçlar var", en:"Has mutating (write) tools"},
@@ -1144,7 +1503,8 @@ window.__MCP_I18N__ = {
 
   var savedLang = null;
   try { savedLang = localStorage.getItem("mcp-docs-lang"); } catch(e){}
-  applyLang(savedLang === "en" ? "en" : "tr");
+  applyLang(savedLang === "tr" ? "tr" : "en");
+  document.documentElement.setAttribute("data-i18n-ready", "1");
 
   /* ---------------- theme ---------------- */
   function applyTheme(mode){
